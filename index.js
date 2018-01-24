@@ -7,4 +7,5 @@ app.get('/ping', (req, res) => {
     })
 })
 
+app.use('/users', require('./routes/users_routes'))
 app.listen(process.env.PORT || 8080)
