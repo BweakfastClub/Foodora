@@ -1,0 +1,94 @@
+const fs = require('fs');
+const axios = require('axios');
+const {promisify} = require('util');
+const {apiKey} = require('./config');
+const reviewsScraper = require('./reviews_scraper');
+const {sleep} = require('./util');
+
+const writeFilePromise = promisify(fs.writeFile);
+
+module.exports.scrape = async (category) => {
+    let pageNumber = 0;
+    let recipes;
+
+    do {
+        const fileName = `./data/recipes/${parseName(category.name)}_${pageNumber}.json`;
+        recipes = (await getRecipes(category.id, pageNumber)).data.cards;
+        const promises = recipes.map(async (recipe) => {
+            let recipeID;
+            if (recipe.hasOwnProperty('associatedRecipeCook')) {
+                recipeID = recipe.associatedRecipeCook.id;
+            } else {
+                recipeID = recipe.id;
+            }
+
+            try {
+                return retrieveRecipePromise(recipeID);
+            } catch (e) {
+                if (e.code === 'ETIMEDOUT') {
+                    console.log('Waiting 30 seconds to make sure not to overload server more');
+                    await sleep(30 * 1000);
+                } else if (e.hasOwnProperty('response') && e.response.status === 404) {
+                    console.log(`Unable to find recipe ID ${recipeID}`)
+                } else {
+                    throw e;
+                }
+            }
+        });
+
+        recipes = await Promise.all(promises);
+        await writeFilePromise(fileName, JSON.stringify(recipes));
+        console.log(`Saved to ${fileName}`);
+        pageNumber += 1;
+        console.log(`Recipes length: ${recipes.length}`);
+    } while (recipes.length > 0);
+};
+
+async function getRecipes(id, pageNumber) {
+    return await axios.get(
+        `https://apps.allrecipes.com/v1/assets/hub-feed?id=${id}&pageNumber=${pageNumber}&isSponsored=false&sortType=p`,
+        {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        }
+    );
+}
+
+async function getRecipe(recipeID) {
+    return await axios.get(
+        `https://apps.allrecipes.com/v1/recipes/${recipeID}?isMetric=false`,
+        {
+            headers: {
+                'Authorization': `Bearer ${apiKey}`
+            }
+        }
+    );
+}
+
+function retrieveRecipePromise(recipeID) {
+    return new Promise((async (resolve, reject) => {
+        try {
+            const {title: name, nutrition, servings, prepMinutes, cookMinutes, readyInMinutes, similarRecipes} = (await getRecipe(recipeID)).data;
+            const {reviews, ratings} = await reviewsScraper.scrape(recipeID, 100);
+
+            resolve({
+                name,
+                reviews,
+                nutrition,
+                servings,
+                prepMinutes,
+                cookMinutes,
+                readyInMinutes,
+                similarRecipes,
+                ratings
+            });
+        } catch (e) {
+            reject(e);
+        }
+    }));
+}``
+
+function parseName(name) {
+    return name.toLowerCase().replace(' ', '_').replace('&', 'and');
+}
