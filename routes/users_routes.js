@@ -6,4 +6,6 @@ const usersController = require('../controllers/users_controller')
 
     app.post('/login', usersController.login)
 
+    app.get('/example', usersController.exampleForQueryingCassandra)
+
 module.exports = app
