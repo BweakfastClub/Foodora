@@ -5,7 +5,6 @@ const client = new cassandra.Client({contactPoints: ['127.0.0.1']})
 
 module.exports.setup = () => {
     console.log('Setting up the database')
-    const id = cassandra.types.Uuid.random()
     async.series([
         connect,
         function createKeyspace(next) {
