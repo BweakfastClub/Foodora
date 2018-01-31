@@ -1,6 +1,6 @@
-const usersModel = require('../models/users_model')
+const usersModel = require("../models/users_model")
 
-module.exports.setUp = () =>{
+module.exports.setUp = () => {
     usersModel.setup()
 };
 
@@ -9,9 +9,9 @@ module.exports.findAllUsers = (req, res) => {
 };
 
 module.exports.register = (req, res) => {
-    res.status(200).json({data : "success"})
+    res.status(200).json({data: "success"})
 };
 
 module.exports.login = (req, res) => {
-    res.status(200).json({data : "success"})
+    res.status(200).json({data: "success"})
 };

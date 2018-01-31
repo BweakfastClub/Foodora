@@ -1,8 +1,11 @@
 {
+    "globals": {
+        "module": true,
+        "require": true
+    },
     "env": {
         "browser": true,
-        "es6": true,
-        "amd": true
+        "es6": true
     },
     "extends": "eslint:recommended",
     "parserOptions": {
@@ -41,7 +44,7 @@
         "comma-style": "error",
         "complexity": "error",
         "computed-property-spacing": "error",
-        "consistent-return": "error",
+        "consistent-return": "off",
         "consistent-this": "error",
         "curly": "error",
         "default-case": "error",
@@ -52,7 +55,10 @@
         "for-direction": "error",
         "func-call-spacing": "error",
         "func-name-matching": "error",
-        "func-names": "error",
+        "func-names": [
+            "error",
+            "as-needed"
+        ],
         "func-style": "error",
         "function-paren-newline": "error",
         "generator-star-spacing": "error",
@@ -82,7 +88,7 @@
         "lines-around-directive": "error",
         "lines-between-class-members": "error",
         "max-depth": "error",
-        "max-len": "error",
+        "max-len": "off",
         "max-lines": "error",
         "max-nested-callbacks": "error",
         "max-params": "error",
@@ -90,7 +96,7 @@
         "max-statements-per-line": "error",
         "multiline-comment-style": "error",
         "multiline-ternary": "error",
-        "new-cap": "error",
+        "new-cap": "off",
         "new-parens": "error",
         "newline-after-var": [
             "error",
@@ -106,6 +112,7 @@
         "no-caller": "error",
         "no-catch-shadow": "error",
         "no-confusing-arrow": "error",
+        "no-console": "off",
         "no-continue": "error",
         "no-div-regex": "error",
         "no-duplicate-imports": "error",
@@ -213,7 +220,7 @@
         "quote-props": "off",
         "quotes": [
             "error",
-            "single"
+            "double"
         ],
         "radix": "error",
         "require-await": "error",
@@ -226,7 +233,10 @@
         "sort-keys": "error",
         "sort-vars": "error",
         "space-before-blocks": "error",
-        "space-before-function-paren": "error",
+        "space-before-function-paren": [
+            "error",
+            "never"
+        ],
         "space-in-parens": [
             "error",
             "never"
