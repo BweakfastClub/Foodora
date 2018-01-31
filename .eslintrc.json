@@ -9,7 +9,8 @@
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "sourceType": "module"
+        "sourceType": "module",
+        "ecmaVersion": 8
     },
     "rules": {
         "accessor-pairs": "error",
@@ -59,7 +60,7 @@
             "error",
             "as-needed"
         ],
-        "func-style": "error",
+        "func-style": "off",
         "function-paren-newline": "error",
         "generator-star-spacing": "error",
         "getter-return": "error",
@@ -92,7 +93,7 @@
         "max-lines": "error",
         "max-nested-callbacks": "error",
         "max-params": "error",
-        "max-statements": "error",
+        "max-statements": "off",
         "max-statements-per-line": "error",
         "multiline-comment-style": "error",
         "multiline-ternary": "error",
@@ -185,7 +186,7 @@
         "no-unmodified-loop-condition": "error",
         "no-unneeded-ternary": "error",
         "no-unused-expressions": "error",
-        "no-use-before-define": "error",
+        "no-use-before-define": "off",
         "no-useless-call": "error",
         "no-useless-computed-key": "error",
         "no-useless-concat": "error",
@@ -224,7 +225,7 @@
         ],
         "radix": "error",
         "require-await": "error",
-        "require-jsdoc": "error",
+        "require-jsdoc": "off",
         "rest-spread-spacing": "error",
         "semi": "off",
         "semi-spacing": "error",
