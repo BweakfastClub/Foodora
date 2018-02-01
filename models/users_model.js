@@ -18,6 +18,23 @@ const selectAllUsers = function(next) {
     });
 };
 
+const registerUser = function(name, email, password, next) {
+    const query = "INSERT INTO development.users (name, email, password) VALUES (?, ?, ?)";
+    const params = [
+        name,
+        email,
+        password
+    ];
+
+    client.execute(query, params, {prepare: true}, (err, result) => {
+        if (err) {
+            return next(err);
+        }
+        console.log(result);
+        next();
+    });
+};
+
 const onResultReturned = function(err) {
     if (err) {
         console.error("There was an error", err.message, err.stack);
@@ -34,7 +51,7 @@ module.exports.setup = () => {
             client.execute(query, next);
         },
         function createTable(next) {
-            const query = "CREATE TABLE IF NOT EXISTS development.users (id uuid, name text, PRIMARY KEY(id))";
+            const query = "CREATE TABLE IF NOT EXISTS development.users (name text, email text, password text, PRIMARY KEY(email))";
 
             client.execute(query, next);
         }
@@ -48,3 +65,11 @@ module.exports.findAllUsers = () => {
     ], onResultReturned);
 };
 
+module.exports.registerUser = (name, email, password) => {
+    async.series([
+        connect,
+        (next) => {
+            registerUser(name, email, password, next);
+        }
+    ], onResultReturned);
+};

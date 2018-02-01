@@ -8,8 +8,8 @@ module.exports.findAllUsers = (req, res) => {
     res.json(usersModel.findAllUsers());
 };
 
-module.exports.register = (req, res) => {
-    res.status(200).json({data: "success"});
+module.exports.register = ({body: {name = null, email = null, password = null}}, res) => {
+    res.json(usersModel.registerUser(name, email, password));
 };
 
 module.exports.login = (req, res) => {
