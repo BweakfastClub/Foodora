@@ -32,7 +32,7 @@ module.exports.scrape = async(category) => {
                     console.log("Waiting 30 seconds to make sure not to overload server more");
                     await sleep(30 * 1000);
                 } else if (Reflect.apply(error.hasOwnProperty, error, "response") && error.response.status === 404) {
-                    console.log(`Unable to find recipe ID ${recipeID}`)
+                    console.log(`Unable to find recipe ID ${recipeID}`);
                 } else {
                     throw error;
                 }

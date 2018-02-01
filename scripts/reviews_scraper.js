@@ -42,7 +42,7 @@ module.exports.scrape = async(recipeID, pageSize = 10) => {
                 console.log("Waiting 30 seconds to make sure not to overload server more");
                 await sleep(30 * 1000);
             } else if (Reflect.apply(error.hasOwnProperty, error, "response") && error.response.status === 404) {
-                console.log(`Unable to find reviews for ${recipeID}`)
+                console.log(`Unable to find reviews for ${recipeID}`);
             } else {
                 throw error;
             }
