@@ -1,6 +1,8 @@
 const cassandra = require("cassandra-driver");
 const async = require("async");
 const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
 
 const connect = function(next) {
     client.connect(next);
@@ -16,6 +18,41 @@ const selectAllUsers = function(next) {
         console.log(result);
         next();
     });
+};
+
+const hashPassword = (password, next) => {
+    bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
+        if (err) {
+            return next(err);
+        }
+        console.log(hashedPassword);
+        next(null, hashedPassword);
+    });
+};
+
+const storeUser = (query, params, hashedPassword, next) => {
+    params.push(hashedPassword);
+    client.execute(query, params, {prepare: true}, (err, result) => {
+        if (err) {
+            return next(err);
+        }
+        console.log(result);
+    });
+    next(null);
+};
+
+const registerUser = function(name, email, password, onRegistered) {
+    const query = "INSERT INTO development.users (name, email, password) VALUES (?, ?, ?)";
+    const params = [
+        name,
+        email
+    ];
+
+    async.waterfall([
+        (next) => hashPassword(password, next),
+        (hashedPassword, next) => storeUser(query, params, hashedPassword, next)
+    ], onRegistered);
+
 };
 
 const onResultReturned = function(err) {
@@ -34,7 +71,7 @@ module.exports.setup = () => {
             client.execute(query, next);
         },
         function createTable(next) {
-            const query = "CREATE TABLE IF NOT EXISTS development.users (id uuid, name text, PRIMARY KEY(id))";
+            const query = "CREATE TABLE IF NOT EXISTS development.users (name text, email text, password text, PRIMARY KEY(email))";
 
             client.execute(query, next);
         }
@@ -48,3 +85,11 @@ module.exports.findAllUsers = () => {
     ], onResultReturned);
 };
 
+module.exports.registerUser = (name, email, password) => {
+    async.series([
+        connect,
+        (next) => {
+            registerUser(name, email, password, next);
+        }
+    ], onResultReturned);
+};
