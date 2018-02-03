@@ -36,7 +36,6 @@ const storeUser = (query, params, hashedPassword, next) => {
         if (err) {
             return next(err);
         }
-        console.log(result);
     });
     next(null);
 };
@@ -55,11 +54,52 @@ const registerUser = function(name, email, password, onRegistered) {
 
 };
 
+const fetchHashedPassword = (email, next) => {
+    const query = "SELECT password FROM development.users WHERE email = ?";
+
+    client.execute(query, [email], {prepare: true}, (err, result) => {
+        if (err) {
+            return next(err);
+        }
+        const row = result.first();
+
+        if (!row) {
+            return next({message: "username does not exist"});
+        }
+        const {password} = row;
+
+        next(null, password);
+    });
+};
+
+const authorizeLogin = function(email, password, hashedPassword, next) {
+    bcrypt.compare(password, hashedPassword, (err, res) => {
+        if (err) {
+            return next(err);
+        }
+        if (!res) {
+            return next({message: "password is wrong"});
+        }
+
+        return next(null);
+    });
+};
+
 const onResultReturned = function(err) {
     if (err) {
         console.error("There was an error", err.message, err.stack);
     }
 };
+
+const onProcessedLogin = function(err) {
+    if (err) {
+        console.error(err.message);
+    } else {
+        console.log("Issue jwt token here");
+        // Issue jwt token
+    }
+};
+
 
 module.exports.setup = () => {
     console.log("Setting up the database");
@@ -92,4 +132,12 @@ module.exports.registerUser = (name, email, password) => {
             registerUser(name, email, password, next);
         }
     ], onResultReturned);
+};
+
+module.exports.login = (email, password) => {
+    async.waterfall([
+        connect,
+        (next) => fetchHashedPassword(email, next),
+        (hashedPassword, next) => authorizeLogin(email, password, hashedPassword, next)
+    ], onProcessedLogin);
 };
