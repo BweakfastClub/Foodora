@@ -1,18 +1,20 @@
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
+const jwt = require("jsonwebtoken");
+const config = require("./config");
 
 module.exports.hashPassword = (password, next) => {
     bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
         if (err) {
             return next(err);
         }
-        console.log(hashedPassword);
+
         next(null, hashedPassword);
     });
 };
 
-module.exports.authorizeLogin = (email, password, hashedPassword, next) => {
-    bcrypt.compare(password, hashedPassword, (err, res) => {
+module.exports.authorizeLogin = (email, password, userInfo, next) => {
+    bcrypt.compare(password, userInfo.password, (err, res) => {
         if (err) {
             return next(err);
         }
@@ -20,6 +22,15 @@ module.exports.authorizeLogin = (email, password, hashedPassword, next) => {
             return next({message: "password is wrong"});
         }
 
-        return next(null);
+        next(null, userInfo);
     });
+};
+
+module.exports.issueToken = ({name, email}, next) => {
+    const token = jwt.sign({
+        email,
+        name
+    }, config.jwtSecret);
+
+    next(null, token);
 };

@@ -14,7 +14,6 @@ const selectAllUsers = function(next) {
         if (err) {
             return next(err);
         }
-        console.log(result);
         next();
     });
 };
@@ -43,21 +42,20 @@ const registerUser = function(name, email, password, onRegistered) {
 
 };
 
-const fetchHashedPassword = (email, next) => {
-    const query = "SELECT password FROM development.users WHERE email = ?";
+const fetchUserInfo = (email, next) => {
+    const query = "SELECT * FROM development.users WHERE email = ?";
 
     client.execute(query, [email], {prepare: true}, (err, result) => {
         if (err) {
             return next(err);
         }
-        const row = result.first();
+        const userInfo = result.first();
 
-        if (!row) {
+        if (!userInfo) {
             return next({message: "username does not exist"});
         }
-        const {password} = row;
 
-        next(null, password);
+        next(null, userInfo);
     });
 };
 
@@ -66,16 +64,6 @@ const onResultReturned = function(err) {
         console.error("There was an error", err.message, err.stack);
     }
 };
-
-const onProcessedLogin = function(err) {
-    if (err) {
-        console.error(err.message);
-    } else {
-        console.log("Issue jwt token here");
-        // Issue jwt token
-    }
-};
-
 
 module.exports.setup = () => {
     console.log("Setting up the database");
@@ -104,16 +92,15 @@ module.exports.findAllUsers = () => {
 module.exports.registerUser = (name, email, password) => {
     async.series([
         connect,
-        (next) => {
-            registerUser(name, email, password, next);
-        }
+        (next) => registerUser(name, email, password, next)
     ], onResultReturned);
 };
 
-module.exports.login = (email, password) => {
+module.exports.login = (email, password, callback) => {
     async.waterfall([
         connect,
-        (next) => fetchHashedPassword(email, next),
-        (hashedPassword, next) => auth.authorizeLogin(email, password, hashedPassword, next)
-    ], onProcessedLogin);
+        (next) => fetchUserInfo(email, next),
+        (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
+        (userInfo, next) => auth.issueToken(userInfo, next)
+    ], callback);
 };
