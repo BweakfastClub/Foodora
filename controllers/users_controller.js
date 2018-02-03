@@ -12,6 +12,12 @@ module.exports.register = ({body: {name = null, email = null, password = null}},
     res.json(usersModel.registerUser(name, email, password));
 };
 
-module.exports.login = (req, res) => {
-    res.status(200).json({data: "success"});
+module.exports.login = ({body: {email = null, password = null}}, res) => {
+    usersModel.login(email, password, (err, token) => {
+        if (err) {
+            res.json(err.message);
+        } else {
+            res.json(token);
+        }
+    });
 };

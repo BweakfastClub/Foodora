@@ -1,8 +1,7 @@
 const cassandra = require("cassandra-driver");
 const async = require("async");
 const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
+const auth = require("../services/auth");
 
 const connect = function(next) {
     client.connect(next);
@@ -15,28 +14,16 @@ const selectAllUsers = function(next) {
         if (err) {
             return next(err);
         }
-        console.log(result);
         next();
-    });
-};
-
-const hashPassword = (password, next) => {
-    bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
-        if (err) {
-            return next(err);
-        }
-        console.log(hashedPassword);
-        next(null, hashedPassword);
     });
 };
 
 const storeUser = (query, params, hashedPassword, next) => {
     params.push(hashedPassword);
-    client.execute(query, params, {prepare: true}, (err, result) => {
+    client.execute(query, params, {prepare: true}, (err) => {
         if (err) {
             return next(err);
         }
-        console.log(result);
     });
     next(null);
 };
@@ -49,10 +36,27 @@ const registerUser = function(name, email, password, onRegistered) {
     ];
 
     async.waterfall([
-        (next) => hashPassword(password, next),
+        (next) => auth.hashPassword(password, next),
         (hashedPassword, next) => storeUser(query, params, hashedPassword, next)
     ], onRegistered);
 
+};
+
+const fetchUserInfo = (email, next) => {
+    const query = "SELECT * FROM development.users WHERE email = ?";
+
+    client.execute(query, [email], {prepare: true}, (err, result) => {
+        if (err) {
+            return next(err);
+        }
+        const userInfo = result.first();
+
+        if (!userInfo) {
+            return next({message: "username does not exist"});
+        }
+
+        next(null, userInfo);
+    });
 };
 
 const onResultReturned = function(err) {
@@ -88,8 +92,15 @@ module.exports.findAllUsers = () => {
 module.exports.registerUser = (name, email, password) => {
     async.series([
         connect,
-        (next) => {
-            registerUser(name, email, password, next);
-        }
+        (next) => registerUser(name, email, password, next)
     ], onResultReturned);
+};
+
+module.exports.login = (email, password, callback) => {
+    async.waterfall([
+        connect,
+        (next) => fetchUserInfo(email, next),
+        (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
+        (userInfo, next) => auth.issueToken(userInfo, next)
+    ], callback);
 };
