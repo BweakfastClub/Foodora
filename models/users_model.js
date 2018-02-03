@@ -1,8 +1,7 @@
 const cassandra = require("cassandra-driver");
 const async = require("async");
 const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
+const auth = require("../services/auth");
 
 const connect = function(next) {
     client.connect(next);
@@ -20,19 +19,9 @@ const selectAllUsers = function(next) {
     });
 };
 
-const hashPassword = (password, next) => {
-    bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
-        if (err) {
-            return next(err);
-        }
-        console.log(hashedPassword);
-        next(null, hashedPassword);
-    });
-};
-
 const storeUser = (query, params, hashedPassword, next) => {
     params.push(hashedPassword);
-    client.execute(query, params, {prepare: true}, (err, result) => {
+    client.execute(query, params, {prepare: true}, (err) => {
         if (err) {
             return next(err);
         }
@@ -48,7 +37,7 @@ const registerUser = function(name, email, password, onRegistered) {
     ];
 
     async.waterfall([
-        (next) => hashPassword(password, next),
+        (next) => auth.hashPassword(password, next),
         (hashedPassword, next) => storeUser(query, params, hashedPassword, next)
     ], onRegistered);
 
@@ -69,19 +58,6 @@ const fetchHashedPassword = (email, next) => {
         const {password} = row;
 
         next(null, password);
-    });
-};
-
-const authorizeLogin = function(email, password, hashedPassword, next) {
-    bcrypt.compare(password, hashedPassword, (err, res) => {
-        if (err) {
-            return next(err);
-        }
-        if (!res) {
-            return next({message: "password is wrong"});
-        }
-
-        return next(null);
     });
 };
 
@@ -138,6 +114,6 @@ module.exports.login = (email, password) => {
     async.waterfall([
         connect,
         (next) => fetchHashedPassword(email, next),
-        (hashedPassword, next) => authorizeLogin(email, password, hashedPassword, next)
+        (hashedPassword, next) => auth.authorizeLogin(email, password, hashedPassword, next)
     ], onProcessedLogin);
 };
