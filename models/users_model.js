@@ -18,14 +18,26 @@ const selectAllUsers = function(next) {
     });
 };
 
+const deleteUser = function({email}, next) {
+    const query = "DELETE FROM development.users WHERE email IN (?)";
+    const params = [email];
+
+    client.execute(query, params, {prepare: true}, (err) => {
+        if (err) {
+            return next(err);
+        }
+        next();
+    });
+};
+
 const storeUser = (query, params, hashedPassword, next) => {
     params.push(hashedPassword);
     client.execute(query, params, {prepare: true}, (err) => {
         if (err) {
             return next(err);
         }
+        next();
     });
-    next(null);
 };
 
 const registerUser = function(name, email, password, onRegistered) {
@@ -93,6 +105,15 @@ module.exports.registerUser = (name, email, password) => {
     async.series([
         connect,
         (next) => registerUser(name, email, password, next)
+    ], onResultReturned);
+};
+
+module.exports.deleteUser = (email, password) => {
+    async.waterfall([
+        connect,
+        (next) => fetchUserInfo(email, next),
+        (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
+        (userInfo, next) => deleteUser(userInfo, next)
     ], onResultReturned);
 };
 

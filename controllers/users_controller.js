@@ -12,6 +12,10 @@ module.exports.register = ({body: {name = null, email = null, password = null}},
     res.json(usersModel.registerUser(name, email, password));
 };
 
+module.exports.deleteUser = ({body: {email = null, password = null}}, res) => {
+    res.json(usersModel.deleteUser(email, password));
+};
+
 module.exports.login = ({body: {email = null, password = null}}, res) => {
     usersModel.login(email, password, (err, token) => {
         if (err) {
