@@ -8,7 +8,7 @@ const connect = function(next) {
 };
 
 const selectAllUsers = function(next) {
-    const query = "SELECT id, name FROM development.users";
+    const query = "SELECT email, name FROM development.users";
 
     client.execute(query, {prepare: true}, (err, result) => {
         if (err) {
