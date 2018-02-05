@@ -17,7 +17,6 @@ const selectAllUsers = function(next) {
         next();
     });
 };
-
 const deleteUser = function({email}, next) {
     const query = "DELETE FROM development.users WHERE email IN (?)";
     const params = [email];
