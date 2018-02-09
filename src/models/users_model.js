@@ -93,18 +93,18 @@ module.exports.setup = () => {
     ], onResultReturned);
 };
 
-module.exports.findAllUsers = () => {
+module.exports.findAllUsers = (callback) => {
     async.series([
         connect,
         selectAllUsers
-    ], onResultReturned);
+    ], callback);
 };
 
-module.exports.registerUser = (name, email, password) => {
+module.exports.registerUser = (name, email, password, callback) => {
     async.series([
         connect,
         (next) => registerUser(name, email, password, next)
-    ], onResultReturned);
+    ], callback);
 };
 
 module.exports.deleteUser = (email, password) => {
