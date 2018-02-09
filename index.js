@@ -10,5 +10,6 @@ app.get("/ping", (req, res) => {
     });
 });
 
-app.use("/users", require("./routes/users_routes"));
+app.use("/users", require("./src/routes/users_routes"));
 app.listen(8080);
+module.exports = app;

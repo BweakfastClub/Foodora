@@ -4,7 +4,7 @@
   "description": "foodora gives you the top recipes",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node ./node_modules/mocha/bin/mocha --recursive",
     "lint": "./node_modules/.bin/eslint *.js   ./node_modules/.bin/eslint */*.js"
   },
   "author": "",
@@ -17,6 +17,9 @@
     "jsonwebtoken": "^8.1.1"
   },
   "devDependencies": {
-    "eslint": "^4.16.0"
+    "eslint": "^4.16.0",
+    "chai": "^4.1.2",
+    "chai-http": "^3.0.0",
+    "mocha": "^5.0.0"
   }
 }

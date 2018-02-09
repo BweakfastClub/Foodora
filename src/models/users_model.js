@@ -8,9 +8,9 @@ const connect = function(next) {
 };
 
 const selectAllUsers = function(next) {
-    const query = "SELECT email, name FROM development.users";
+    const query = "SELECT * FROM development.users";
 
-    client.execute(query, {prepare: true}, (err, result) => {
+    client.execute(query, {prepare: true}, (err) => {
         if (err) {
             return next(err);
         }
