@@ -36,7 +36,3 @@ describe("Endpoints exists", () => {
         });
     });
 });
-
-after(function(){
-    process.exit(0);
-});
