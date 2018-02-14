@@ -4,7 +4,7 @@
   "description": "foodora gives you the top recipes",
   "main": "index.js",
   "scripts": {
-    "test": "node ./node_modules/mocha/bin/mocha --recursive",
+    "test": "node ./node_modules/mocha/bin/mocha --recursive --exit",
     "lint": "./node_modules/.bin/eslint *.js   ./node_modules/.bin/eslint */*.js"
   },
   "author": "",
