@@ -68,23 +68,24 @@ describe("Endpoints exists", () => {
                     done();
                 });
         });
-
-        it("Post user successful", (done) => {
-            chai.request(usersRoutes).
-                post("/users").
-                set("content-type", "application/json").
-                send({
-                    email: "user@email.com",
-                    name: "user",
-                    password: "1234"
-                }).
-                end((err, res) => {
-                    should.not.exist(err);
-                    res.should.have.status(200);
-                    done();
-                });
-        });
     });
+
+    it("Post user successful", (done) => {
+        chai.request(usersRoutes).
+            post("/users").
+            set("content-type", "application/json").
+            send({
+                email: "user@email.com",
+                name: "user",
+                password: "1234"
+            }).
+            end((err, res) => {
+                should.not.exist(err);
+                res.should.have.status(200);
+                done();
+            });
+    });
+
     describe("login tests", () => {
         it("logs in succesfully after user registration and issues a token", (done) => {
             chai.request(usersRoutes).
@@ -113,8 +114,7 @@ describe("Endpoints exists", () => {
                         });
                 });
         });
-    });
-    describe("login tests", () => {
+
         it("logs in failed after with incorrect password", (done) => {
             chai.request(usersRoutes).
                 post("/users").
@@ -142,9 +142,7 @@ describe("Endpoints exists", () => {
                         });
                 });
         });
-    });
 
-    describe("login tests", () => {
         it("logs in failed after with unregistered user", (done) => {
             chai.request(usersRoutes).
                 post("/users/login").
