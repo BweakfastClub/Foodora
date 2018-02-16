@@ -28,6 +28,6 @@ module.exports.login = ({body: {email = null, password = null}}, res) => {
         return res.status(400).json("Email and Password must be provided");
     }
     usersModel.login(email, password, (err, token) => {
-        res.status(err ? 500 : 200).json({token});
+        res.status(err ? 401 : 200).json({token});
     });
 };

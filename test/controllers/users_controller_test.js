@@ -114,5 +114,52 @@ describe("Endpoints exists", () => {
                 });
         });
     });
+    describe("login tests", () => {
+        it("logs in failed after with incorrect password", (done) => {
+            chai.request(usersRoutes).
+                post("/users").
+                set("content-type", "application/json").
+                send({
+                    email: "user@email.com",
+                    name: "user",
+                    password: "1234"
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    chai.request(usersRoutes).
+                        post("/users/login").
+                        set("content-type", "application/json").
+                        send({
+                            email: "user@email.com",
+                            password: "wrong_password"
+                        }).
+                        end((loginErr, loginRes) => {
+                            should.exist(loginErr);
+                            loginRes.should.have.status(401);
+                            should.not.exist(loginRes.body.token);
+                            done();
+                        });
+                });
+        });
+    });
+
+    describe("login tests", () => {
+        it("logs in failed after with unregistered user", (done) => {
+            chai.request(usersRoutes).
+                post("/users/login").
+                set("content-type", "application/json").
+                send({
+                    email: "wrong_user@email.com",
+                    password: "wrong_password"
+                }).
+                end((loginErr, loginRes) => {
+                    should.exist(loginErr);
+                    loginRes.should.have.status(401);
+                    should.not.exist(loginRes.body.token);
+                    done();
+                });
+        });
+    });
 });
 
