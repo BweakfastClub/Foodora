@@ -14,8 +14,8 @@ module.exports.register = ({body: {name = null, email = null, password = null}},
     if (!email || !password || !name) {
         return res.status(400).json("Email, name and Password must be provided");
     }
-    usersModel.registerUser(name, email, password, (err, response) => {
-        res.status(err ? 500 : 200).json(response);
+    usersModel.registerUser(name, email, password, (err) => {
+        res.status(err ? 500 : 200).json();
     });
 };
 
@@ -28,6 +28,6 @@ module.exports.login = ({body: {email = null, password = null}}, res) => {
         return res.status(400).json("Email and Password must be provided");
     }
     usersModel.login(email, password, (err, token) => {
-        res.status(err ? 500 : 200).json(token);
+        res.status(err ? 500 : 200).json({token});
     });
 };

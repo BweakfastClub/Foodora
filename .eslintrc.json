@@ -2,7 +2,8 @@
     "globals": {
         "module": true,
         "require": true,
-        "process": true
+        "process": true,
+        "before": true
     },
     "env": {
         "browser": true,

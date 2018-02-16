@@ -70,13 +70,7 @@ const fetchUserInfo = (email, next) => {
     });
 };
 
-const onResultReturned = function(err) {
-    if (err) {
-        console.error("There was an error", err.message, err.stack);
-    }
-};
-
-module.exports.setup = () => {
+module.exports.setup = (callback) => {
     console.log("Setting up the database");
     async.series([
         connect,
@@ -90,7 +84,7 @@ module.exports.setup = () => {
 
             client.execute(query, next);
         }
-    ], onResultReturned);
+    ], callback);
 };
 
 module.exports.findAllUsers = (callback) => {
@@ -113,7 +107,7 @@ module.exports.deleteUser = (email, password) => {
         (next) => fetchUserInfo(email, next),
         (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
         (userInfo, next) => deleteUser(userInfo, next)
-    ], onResultReturned);
+    ]);
 };
 
 module.exports.login = (email, password, callback) => {
