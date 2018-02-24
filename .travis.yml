@@ -1,5 +1,8 @@
 language: node_js
 node_js:
   - 'stable'
+sudo: required
+services:
+  - cassandra
 notifications:
   slack: bwekfastclub:apMLylCPCrM8rZTKlRkUOohL
