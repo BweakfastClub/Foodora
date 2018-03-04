@@ -1,10 +1,9 @@
-require("dotenv/config");
-
 const cassandra = require("cassandra-driver");
 const async = require("async");
 const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
 const auth = require("../services/auth");
-const env = process.env.NODE_ENV;
+const config = require("../../config");
+const env = config.env;
 
 const connect = function(next) {
     client.connect((err) => {

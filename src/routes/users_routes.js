@@ -1,9 +1,8 @@
-require("dotenv/config");
-
 const app = require("express").Router();
 const usersController = require("../controllers/users_controller");
+const config = require("../../config");
 
-if (process.env.NODE_ENV !== "testing") {
+if (config.env !== "testing") {
     usersController.setUp();
 }
 

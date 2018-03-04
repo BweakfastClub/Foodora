@@ -1,8 +1,8 @@
 const cassandra = require("cassandra-driver");
 const async = require("async");
 const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
-const environment = "development";
-
+const config = require("../../config");
+const environment = config.env;
 
 const connect = function(next) {
     client.connect(next);
