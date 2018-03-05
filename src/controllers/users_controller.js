@@ -5,23 +5,35 @@ module.exports.setUp = () => {
 };
 
 module.exports.findAllUsers = (req, res) => {
-    res.json(usersModel.findAllUsers());
+    usersModel.findAllUsers((err, users) => {
+        res.status(err ? 500 : 200).json(err ? undefined : users);
+    });
 };
 
 module.exports.register = ({body: {name = null, email = null, password = null}}, res) => {
-    res.json(usersModel.registerUser(name, email, password));
+    if (!email || !password || !name) {
+        return res.status(400).json({
+            error: "Email, name and Password must be provided"
+        });
+    }
+    usersModel.registerUser(name, email, password, (err) => {
+        res.status(err ? 500 : 200).json();
+    });
 };
 
 module.exports.deleteUser = ({body: {email = null, password = null}}, res) => {
-    res.json(usersModel.deleteUser(email, password));
+    res.json(usersModel.deleteUser(email, password, (err) => {
+        res.status(err ? 500 : 200).json();
+    }));
 };
 
 module.exports.login = ({body: {email = null, password = null}}, res) => {
+    if (!email || !password) {
+        return res.status(400).json({
+            error: "Email, name and Password must be provided"
+        });
+    }
     usersModel.login(email, password, (err, token) => {
-        if (err) {
-            res.json(err.message);
-        } else {
-            res.json(token);
-        }
+        res.status(err ? 401 : 200).json(err ? undefined : {token});
     });
 };

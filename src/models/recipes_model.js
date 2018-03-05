@@ -1,15 +1,14 @@
 const cassandra = require("cassandra-driver");
 const async = require("async");
 const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
-const environment = "development";
-
+const {env} = require("../../config");
 
 const connect = function(next) {
     client.connect(next);
 };
 
 module.exports.selectAllRecipes = (next) => {
-    const query = `SELECT * FROM ${environment}.recipes`;
+    const query = `SELECT * FROM ${env}.recipes`;
 
     client.execute(query, {prepare: true}, (err, res) => {
         if (err) {
@@ -24,13 +23,13 @@ module.exports.setup = () => {
     async.series([
         connect,
         function createKeyspace(next) {
-            const query = `CREATE KEYSPACE IF NOT EXISTS ${environment} WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' }`;
+            const query = `CREATE KEYSPACE IF NOT EXISTS ${env} WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' }`;
 
             client.execute(query, next);
         },
         function createTable(next) {
             const query =
-                `CREATE TABLE ${environment}.recipes (` +
+                `CREATE TABLE ${env}.recipes (` +
                     "ingredients frozen<map<int, text>>," +
                     "title text," +
                     "id uuid," +
@@ -43,7 +42,7 @@ module.exports.setup = () => {
         },
         function temporaryDataInsert(next) {
             const insertRecipe1 =
-                `INSERT into ${environment}.recipes` +
+                `INSERT into ${env}.recipes` +
                 "(ingredients, title, nutrition, servings, id) " +
                 "VALUES (" +
                     "{12: 'gredient 2', 56: 'ingredient 3'}," +
@@ -53,7 +52,7 @@ module.exports.setup = () => {
                 ")";
 
             const insertRecipe2 =
-                `INSERT into ${environment}.recipes` +
+                `INSERT into ${env}.recipes` +
                 "(ingredients, title, nutrition, servings, id) " +
                 "VALUES (" +
                     "{23: 'ingredient 1', 12: 'ingredient 2'}," +
