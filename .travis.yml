@@ -1,5 +1,10 @@
 language: node_js
 node_js:
   - 'stable'
+before_install:
+  - export NODE_ENV=testing
+sudo: required
+services:
+  - cassandra
 notifications:
   slack: bwekfastclub:apMLylCPCrM8rZTKlRkUOohL
