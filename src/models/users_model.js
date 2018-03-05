@@ -2,13 +2,13 @@ const cassandra = require("cassandra-driver");
 const async = require("async");
 const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
 const auth = require("../services/auth");
-const config = require("../../config");
-const env = config.env;
+const {env} = require("../../config");
 
 const connect = function(next) {
     client.connect((err) => {
         if (err) {
             console.log(`Setup error: ${err}`);
+
             return next(err);
         }
         next();
@@ -88,6 +88,7 @@ module.exports.clean = (callback) => {
             client.execute(query, (err) => {
                 if (err) {
                     console.log(`Drop keyspace error: ${err}`);
+
                     return next(err);
                 }
                 console.log("Keyspace dropped");
@@ -100,6 +101,7 @@ module.exports.clean = (callback) => {
             client.execute(query, (err) => {
                 if (err) {
                     console.log(`Drop table error: ${err}`);
+
                     return next(err);
                 }
                 console.log("Table dropped");
@@ -119,6 +121,7 @@ module.exports.setup = (callback) => {
             client.execute(query, (err) => {
                 if (err) {
                     console.log(`Create keyspace error: ${err}`);
+
                     return next(err);
                 }
                 console.log("Keyspace created");
@@ -131,6 +134,7 @@ module.exports.setup = (callback) => {
             client.execute(query, (err) => {
                 if (err) {
                     console.log(`Create table error: ${err}`);
+
                     return next(err);
                 }
                 console.log("Table created");
@@ -154,13 +158,13 @@ module.exports.registerUser = (name, email, password, callback) => {
     ], callback);
 };
 
-module.exports.deleteUser = (email, password) => {
+module.exports.deleteUser = (email, password, callback) => {
     async.waterfall([
         connect,
         (next) => fetchUserInfo(email, next),
         (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
         (userInfo, next) => deleteUser(userInfo, next)
-    ]);
+    ], callback);
 };
 
 module.exports.login = (email, password, callback) => {

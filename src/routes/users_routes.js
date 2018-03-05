@@ -1,8 +1,8 @@
 const app = require("express").Router();
 const usersController = require("../controllers/users_controller");
-const config = require("../../config");
+const {env} = require("../../config");
 
-if (config.env !== "testing") {
+if (env !== "testing") {
     usersController.setUp();
 }
 
