@@ -30,5 +30,13 @@ module.exports.processRecipesJson = (req, res) => {
         ingredients: ingredients.map((ingredient) => ingredient.ingredientID)
     }));
 
-    res.status(200).json(ingredientsList);
+
+    const pythonProcess = spawn("python", ["tensorflow_test.py"]);
+
+    pythonProcess.stdin.write(JSON.stringify(ingredientsList));
+    pythonProcess.stdin.end();
+
+    pythonProcess.stdout.on("data", (data) => {
+        res.status(200).json(data.toString());
+    });
 };
