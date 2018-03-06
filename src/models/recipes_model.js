@@ -60,14 +60,55 @@ module.exports.search = (keyword, next) => {
     });
 };
 
-module.exports.setup = () => {
+module.exports.clean = (callback) => {
+    console.log("Cleaning up the recipes");
+    async.series([
+        connect,
+        function dropKeyspace(next) {
+            const query = `DROP KEYSPACE IF EXISTS ${env}`;
+
+            client.execute(query, (err) => {
+                if (err) {
+                    console.log(`Drop keyspace error: ${err}`);
+
+                    return next(err);
+                }
+                console.log("Keyspace dropped");
+                next();
+            });
+        },
+        function dropTable(next) {
+            const query = `DROP TABLE IF EXISTS ${env}.recipes`;
+
+            client.execute(query, (err) => {
+                if (err) {
+                    console.log(`Drop table error: ${err}`);
+
+                    return next(err);
+                }
+                console.log("Recipes table dropped");
+                next();
+            });
+        }
+    ], callback);
+};
+
+module.exports.setup = (callback) => {
     console.log("Setting up the recipes");
     async.series([
         connect,
         function createKeyspace(next) {
             const query = `CREATE KEYSPACE IF NOT EXISTS ${env} WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' }`;
 
-            client.execute(query, next);
+            client.execute(query, (err) => {
+                if (err) {
+                    console.log(`Create keyspace error: ${err}`);
+
+                    return next(err);
+                }
+                console.log("Keyspace created");
+                next();
+            });
         },
         function createTable(next) {
             const query =
@@ -80,7 +121,15 @@ module.exports.setup = () => {
                     "PRIMARY KEY (ingredients, title, id)" +
                 ")";
 
-            client.execute(query, next);
+            client.execute(query, (err) => {
+                if (err) {
+                    console.log(`Create recipes table error: ${err}`);
+
+                    return next(err);
+                }
+                console.log("Recipes table created");
+                next();
+            });
         },
         function createTitleIndex(next) {
             const query =
@@ -120,5 +169,5 @@ module.exports.setup = () => {
                 client.execute(insertRecipe2, next)
             );
         }
-    ]);
+    ], callback);
 };
