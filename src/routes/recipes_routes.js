@@ -1,7 +1,10 @@
 const app = require("express").Router();
 const recipesController = require("../controllers/recipes_controller");
+const {env} = require("../../config");
 
-recipesController.setUp();
+if (env !== "testing") {
+    recipesController.setUp();
+}
 
 app.get("/", recipesController.findAllRecipes);
 app.get("/python_test", recipesController.callPythonScriptTest);

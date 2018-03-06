@@ -40,6 +40,18 @@ module.exports.setup = () => {
 
             client.execute(query, next);
         },
+        function createTitleIndex(next) {
+            const query =
+                `CREATE CUSTOM INDEX ing_index ON ${env}.recipes(title) ` +
+                "USING 'org.apache.cassandra.index.sasi.SASIIndex'" +
+                "WITH OPTIONS = { " +
+                    "'mode': 'CONTAINS'," +
+                    "'analyzer_class': 'org.apache.cassandra.index.sasi.analyzer.NonTokenizingAnalyzer'," +
+                    "'case_sensitive': 'false'" +
+                "}";
+
+            client.execute(query, next);
+        },
         function temporaryDataInsert(next) {
             const insertRecipe1 =
                 `INSERT into ${env}.recipes` +
