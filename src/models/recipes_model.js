@@ -18,6 +18,18 @@ module.exports.selectAllRecipes = (next) => {
     });
 };
 
+module.exports.searchByTitle = (title, next) => {
+    const params = [`%${title}%`];
+    const query = `SELECT * FROM ${env}.recipes WHERE title LIKE ?`;
+
+    client.execute(query, params, {prepare: true}, (err, res) => {
+        if (err) {
+            return next(err);
+        }
+        next(null, res.rows);
+    });
+};
+
 module.exports.setup = () => {
     console.log("Setting up the recipes");
     async.series([
@@ -68,7 +80,7 @@ module.exports.setup = () => {
                 "(ingredients, title, nutrition, servings, id) " +
                 "VALUES (" +
                     "{23: 'ingredient 1', 12: 'ingredient 2'}," +
-                    " 'spicy recipe'," +
+                    " 'sweet recipe'," +
                     " {'brotein': '420g', 'carbs': '0g'}," +
                     " 2, 94488880-15c0-11e8-b642-0ed5f89f718b" +
                 ")";

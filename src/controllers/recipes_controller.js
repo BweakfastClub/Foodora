@@ -7,8 +7,13 @@ module.exports.setUp = () => {
 
 module.exports.findAllRecipes = (req, res) => {
     recipesModel.selectAllRecipes((err, result) => {
-        console.log(err);
-        res.status(200).json(result);
+        res.status(err ? 500 : 200).json(err ? undefined : result);
+    });
+};
+
+module.exports.findRecipesByTitle = ({query: {title = null}}, res) => {
+    recipesModel.searchByTitle(title, (err, result) => {
+        res.status(err ? 500 : 200).json(err ? undefined : result);
     });
 };
 
