@@ -36,7 +36,17 @@ module.exports.processRecipesJson = (req, res) => {
     pythonProcess.stdin.write(JSON.stringify(ingredientsList));
     pythonProcess.stdin.end();
 
+    let dataString = "";
+
     pythonProcess.stdout.on("data", (data) => {
-        res.status(200).json(data.toString());
+        dataString += data;
+    });
+
+    pythonProcess.stderr.on("data", (error) => {
+        console.error(error.toString());
+    });
+
+    pythonProcess.stdout.on("end", () => {
+        res.status(200).json(dataString.toString());
     });
 };
