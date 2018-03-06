@@ -36,6 +36,8 @@ const searchByIngredients = (ingredient, next) => {
 
     client.execute(query, params, {prepare: true}, (err, res) => {
         if (err) {
+            console.log(err);
+
             return next(err);
         }
         next(null, res.rows);

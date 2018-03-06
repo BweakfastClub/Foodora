@@ -20,6 +20,7 @@ describe("Endpoints exists for recipes", () => {
             chai.request(recipeRoutes).
                 get("/recipes").
                 end((err, res) => {
+                    console.log(res);
                     should.not.exist(err);
                     res.should.have.status(200);
                     done();

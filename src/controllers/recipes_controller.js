@@ -13,6 +13,9 @@ module.exports.findAllRecipes = (req, res) => {
 
 module.exports.findRecipes = ({query: {keyword = null}}, res) => {
     recipesModel.search(keyword, (err, result) => {
+        if (err) {
+            console.log(err);
+        }
         res.status(err ? 500 : 200).json(err ? undefined : result);
     });
 };
