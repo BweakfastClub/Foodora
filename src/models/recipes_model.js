@@ -18,7 +18,7 @@ module.exports.selectAllRecipes = (next) => {
     });
 };
 
-module.exports.searchByTitle = (title, next) => {
+const searchByTitle = (title, next) => {
     const params = [`%${title}%`];
     const query = `SELECT * FROM ${env}.recipes WHERE title LIKE ?`;
 
@@ -27,6 +27,36 @@ module.exports.searchByTitle = (title, next) => {
             return next(err);
         }
         next(null, res.rows);
+    });
+};
+
+const searchByIngredients = (ingredient, next) => {
+    const params = [ingredient];
+    const query = `SELECT * FROM ${env}.recipes WHERE ingredients CONTAINS ? ALLOW FILTERING`;
+
+    client.execute(query, params, {prepare: true}, (err, res) => {
+        if (err) {
+            return next(err);
+        }
+        next(null, res.rows);
+    });
+};
+
+module.exports.search = (keyword, next) => {
+    let results = [];
+
+    searchByIngredients(keyword, (err, res) => {
+        if (err) {
+            return next(err);
+        }
+        results = results.concat(res);
+        searchByTitle(keyword, (err2, res2) => {
+            if (err2) {
+                return next(err2);
+            }
+            results = results.concat(res2);
+            next(null, results);
+        });
     });
 };
 
