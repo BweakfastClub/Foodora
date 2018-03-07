@@ -114,13 +114,13 @@ module.exports.setup = (callback) => {
         },
         function createTable(next) {
             const query =
-                `CREATE TABLE ${env}.recipes (` +
+                `CREATE TABLE IF NOT EXISTS ${env}.recipes (` +
                     "ingredients frozen<map<int, text>>," +
                     "title text," +
                     "id uuid," +
                     "nutrition map<text, text>," +
                     "servings int," +
-                    "PRIMARY KEY (ingredients, title, id)" +
+                    "PRIMARY KEY (id, title, ingredients)" +
                 ")";
 
             client.execute(query, (err) => {
@@ -135,7 +135,7 @@ module.exports.setup = (callback) => {
         },
         function createTitleIndex(next) {
             const query =
-                `CREATE CUSTOM INDEX ing_index ON ${env}.recipes(title) ` +
+                `CREATE CUSTOM INDEX title_index ON ${env}.recipes(title) ` +
                 "USING 'org.apache.cassandra.index.sasi.SASIIndex'" +
                 "WITH OPTIONS = { " +
                     "'mode': 'CONTAINS'," +
@@ -143,7 +143,15 @@ module.exports.setup = (callback) => {
                     "'case_sensitive': 'false'" +
                 "}";
 
-            client.execute(query, next);
+            client.execute(query, (err) => {
+                if (err) {
+                    console.log(`Create custom index error: ${err}`);
+
+                    return next(err);
+                }
+                console.log("Recipes title custom index created");
+                next();
+            });
         },
         function temporaryDataInsert(next) {
             const insertRecipe1 =
