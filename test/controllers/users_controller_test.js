@@ -6,9 +6,13 @@ const should = chai.should();
 
 chai.use(chaiHttp);
 
-describe("Endpoints exists", () => {
+describe("Endpoints exists for users", () => {
     before((done) => {
         usersModel.setup(done);
+    });
+
+    after((done) => {
+        usersModel.clean(done);
     });
 
     describe("/GET users", () => {
