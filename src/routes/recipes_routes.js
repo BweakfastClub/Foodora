@@ -9,5 +9,6 @@ if (env !== "testing") {
 app.get("/", recipesController.findAllRecipes);
 app.get("/search", recipesController.findRecipes);
 app.get("/python_test", recipesController.callPythonScriptTest);
+app.get("/process_json", recipesController.processRecipesJson);
 
 module.exports = app;
