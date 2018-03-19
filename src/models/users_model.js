@@ -4,6 +4,31 @@ const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
 const auth = require("../services/auth");
 const {env} = require("../../config");
 
+//
+// const recipeSchema = new Schema({
+//     email: {
+//         require: [
+//             true,
+//             "Must Enter a Email"
+//         ],
+//         type: String
+//     },
+//     name: {
+//         require: [
+//             true,
+//             "Must Enter a Name"
+//         ],
+//         type: String
+//     },
+//     password: {
+//         require: [
+//             true,
+//             "Must Enter a Password"
+//         ],
+//         type: String
+//     }
+// });
+
 const connect = function(next) {
     client.connect((err) => {
         if (err) {
