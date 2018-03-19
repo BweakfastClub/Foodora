@@ -14,7 +14,6 @@ module.exports.findAllRecipes = (req, res) => {
 
 module.exports.searchRecipes = ({query: {keyword = null}}, res) => {
     recipesModel.search(keyword, (err, result) => {
-        console.log(keyword)
         if (err) {
             console.log(err);
         }

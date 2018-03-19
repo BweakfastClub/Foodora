@@ -1,12 +1,13 @@
+/* eslint-disable max-lines */
 const async = require("async");
 const {url} = require("../../config");
 const mongoClient = require("mongodb").MongoClient;
-
+const {env} = require("../../config");
 
 const connect = (next) => {
     mongoClient.connect(url, (err, client) => {
         console.log("Connected successfully to server");
-        next(err, client, client.db("test").collection("recipe"));
+        next(err, client, client.db(env).collection("recipe"));
     });
 };
 
@@ -33,40 +34,16 @@ const searchMongo = (client, collection, keyword, next) => {
     });
 };
 
+const dropRecipeTable = (client, collection, next) => {
+    collection.drop(client.close(next));
+}
 
-/* Module.exports.clean = (callback) => {
- *     Console.log("Cleaning up the recipes");
- *     Async.series([
- *         Connect,
- *         Function dropKeyspace(next) {
- *             Const query = `DROP KEYSPACE IF EXISTS ${env}`;
- *
- *             Client.execute(query, (err) => {
- *                 If (err) {
- *                     Console.log(`Drop keyspace error: ${err}`);
- *
- *                     Return next(err);
- *                 }
- *                 Console.log("Keyspace dropped");
- *                 Next();
- *             });
- *         },
- *         Function dropTable(next) {
- *             Const query = `DROP TABLE IF EXISTS ${env}.recipes`;
- *
- *             Client.execute(query, (err) => {
- *                 If (err) {
- *                     Console.log(`Drop table error: ${err}`);
- *
- *                     Return next(err);
- *                 }
- *                 Console.log("Recipes table dropped");
- *                 Next();
- *             });
- *         }
- *     ], callback);
- * };
- */
+module.exports.clean = (callback) => {
+    async.waterfall([
+        connect,
+        dropRecipeTable
+    ], callback);
+};
 
 const createIndex = (client, collection, next) => {
     collection.createIndex({
