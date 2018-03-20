@@ -1,9 +1,5 @@
 const usersModel = require("../models/users_model");
 
-module.exports.setUp = () => {
-    usersModel.setup();
-};
-
 module.exports.findAllUsers = (req, res) => {
     usersModel.findAllUsers((err, users) => {
         res.status(err ? 500 : 200).json(err ? undefined : users);
