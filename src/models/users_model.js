@@ -1,193 +1,81 @@
-const cassandra = require("cassandra-driver");
 const async = require("async");
-const client = new cassandra.Client({contactPoints: ["127.0.0.1"]});
-const auth = require("../services/auth");
+const {url} = require("../../config");
+const mongoClient = require("mongodb").MongoClient;
 const {env} = require("../../config");
+const auth = require("../services/auth");
 
-//
-// const recipeSchema = new Schema({
-//     email: {
-//         require: [
-//             true,
-//             "Must Enter a Email"
-//         ],
-//         type: String
-//     },
-//     name: {
-//         require: [
-//             true,
-//             "Must Enter a Name"
-//         ],
-//         type: String
-//     },
-//     password: {
-//         require: [
-//             true,
-//             "Must Enter a Password"
-//         ],
-//         type: String
-//     }
-// });
-
-const connect = function(next) {
-    client.connect((err) => {
-        if (err) {
-            console.log(`Setup error: ${err}`);
-
-            return next(err);
-        }
-        next();
+const connect = (next) => {
+    mongoClient.connect(url, (err, client) => {
+        console.log("Connected successfully to server");
+        next(err, client, client.db(env).collection("users"));
     });
 };
 
-const selectAllUsers = function(next) {
-    const query = `SELECT * FROM ${env}.users`;
-
-    client.execute(query, {prepare: true}, (err) => {
-        if (err) {
-            return next(err);
-        }
-        next();
+const selectAllUsers = (client, collection, next) => {
+    collection.find({}).toArray((err, items) => {
+        client.close(() => next(err, items));
     });
 };
 
-const deleteUser = function({email}, next) {
-    const query = `DELETE FROM ${env}.users WHERE email IN (?)`;
-    const params = [email];
-
-    client.execute(query, params, {prepare: true}, (err) => {
-        if (err) {
-            return next(err);
-        }
-        next();
-    });
+const deleteUser = (client, collection, email, callback) => {
+    collection.remove({email}, callback);
 };
 
-const storeUser = (query, params, hashedPassword, next) => {
-    params.push(hashedPassword);
-    client.execute(query, params, {prepare: true}, (err) => {
-        if (err) {
-            return next(err);
-        }
-        next();
-    });
-};
-
-const registerUser = function(name, email, password, onRegistered) {
-    const query = `INSERT INTO ${env}.users (name, email, password) VALUES (?, ?, ?)`;
-    const params = [
-        name,
-        email
-    ];
-
+const registerUser = (client, collection, name, email, password, callback) => {
     async.waterfall([
         (next) => auth.hashPassword(password, next),
-        (hashedPassword, next) => storeUser(query, params, hashedPassword, next)
-    ], onRegistered);
-
-};
-
-const fetchUserInfo = (email, next) => {
-    const query = `SELECT * FROM ${env}.users WHERE email = ?`;
-
-    client.execute(query, [email], {prepare: true}, (err, result) => {
-        if (err) {
-            return next(err);
-        }
-        const userInfo = result.first();
-
-        if (!userInfo) {
-            return next({message: "username does not exist"});
-        }
-
-        next(null, userInfo);
-    });
-};
-
-module.exports.clean = (callback) => {
-    console.log("Cleaning up the database");
-    async.series([
-        connect,
-        function dropKeyspace(next) {
-            const query = `DROP KEYSPACE IF EXISTS ${env}`;
-
-            client.execute(query, (err) => {
-                if (err) {
-                    console.log(`Drop keyspace error: ${err}`);
-
-                    return next(err);
-                }
-                console.log("Keyspace dropped");
-                next();
-            });
-        },
-        function dropTable(next) {
-            const query = `DROP TABLE IF EXISTS ${env}.users`;
-
-            client.execute(query, (err) => {
-                if (err) {
-                    console.log(`Drop table error: ${err}`);
-
-                    return next(err);
-                }
-                console.log("Table dropped");
-                next();
-            });
-        }
+        (hashedPassword, next) => storeUser(client, collection, name, email, hashedPassword, next)
     ], callback);
 };
 
-module.exports.setup = (callback) => {
-    console.log("Setting up the database");
-    async.series([
-        connect,
-        function createKeyspace(next) {
-            const query = `CREATE KEYSPACE IF NOT EXISTS ${env} WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '3' }`;
+const storeUser = (client, collection, name, email, hashedPassword, callback) => {
+    collection.insertOne({
+        email,
+        hashedPassword,
+        name
+    }, (err, result) => {
+        client.close(() => callback(err, result));
+    });
+};
 
-            client.execute(query, (err) => {
-                if (err) {
-                    console.log(`Create keyspace error: ${err}`);
-
-                    return next(err);
-                }
-                console.log("Keyspace created");
-                next();
-            });
-        },
-        function createTable(next) {
-            const query = `CREATE TABLE IF NOT EXISTS ${env}.users (name text, email text, password text, PRIMARY KEY(email))`;
-
-            client.execute(query, (err) => {
-                if (err) {
-                    console.log(`Create table error: ${err}`);
-
-                    return next(err);
-                }
-                console.log("Table created");
-                next();
-            });
+const fetchUserInfo = (client, collection, email, callback) => {
+    collection.findOne({email}, (err, result) => {
+        if (!result) {
+            return callback({message: "username does not exist"});
         }
+        callback(err, result);
+    });
+};
+
+const dropRecipeTable = (client, collection, next) => {
+    collection.drop(client.close(next));
+};
+
+module.exports.clean = (callback) => {
+    async.waterfall([
+        connect,
+        dropRecipeTable
     ], callback);
 };
 
 module.exports.findAllUsers = (callback) => {
-    async.series([
+    async.waterfall([
         connect,
         selectAllUsers
     ], callback);
 };
 
 module.exports.registerUser = (name, email, password, callback) => {
-    async.series([
+    async.waterfall([
         connect,
-        (next) => registerUser(name, email, password, next)
+        (client, collection, next) => registerUser(client, collection, name, email, password, next)
     ], callback);
 };
 
 module.exports.deleteUser = (email, password, callback) => {
     async.waterfall([
         connect,
-        (next) => fetchUserInfo(email, next),
+        (client, collection, next) => fetchUserInfo(client, collection, email, next),
         (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
         (userInfo, next) => deleteUser(userInfo, next)
     ], callback);
@@ -196,7 +84,7 @@ module.exports.deleteUser = (email, password, callback) => {
 module.exports.login = (email, password, callback) => {
     async.waterfall([
         connect,
-        (next) => fetchUserInfo(email, next),
+        (client, collection, next) => fetchUserInfo(client, collection, email, next),
         (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
         (userInfo, next) => auth.issueToken(userInfo, next)
     ], callback);

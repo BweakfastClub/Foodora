@@ -14,7 +14,7 @@ module.exports.hashPassword = (password, next) => {
 };
 
 module.exports.authorizeLogin = (email, password, userInfo, next) => {
-    bcrypt.compare(password, userInfo.password, (err, res) => {
+    bcrypt.compare(password, userInfo.hashedPassword, (err, res) => {
         if (err) {
             return next(err);
         }

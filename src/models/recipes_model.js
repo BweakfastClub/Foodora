@@ -7,7 +7,7 @@ const {env} = require("../../config");
 const connect = (next) => {
     mongoClient.connect(url, (err, client) => {
         console.log("Connected successfully to server");
-        next(err, client, client.db(env).collection("recipe"));
+        next(err, client, client.db(env).collection("recipes"));
     });
 };
 
@@ -24,7 +24,7 @@ module.exports.allRecipes = (callback) => {
     ], callback);
 };
 
-const searchMongo = (client, collection, keyword, next) => {
+const searchRecipesCollection = (client, collection, keyword, next) => {
     collection.find({
         $text: {
             $search: keyword
@@ -54,7 +54,7 @@ const createIndex = (client, collection, next) => {
 module.exports.search = (keyword, callback) => {
     async.waterfall([
         connect,
-        (client, collection, next) => searchMongo(client, collection, keyword, next)
+        (client, collection, next) => searchRecipesCollection(client, collection, keyword, next)
     ], callback);
 };
 
