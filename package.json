@@ -12,7 +12,6 @@
   "dependencies": {
     "async": "^2.6.0",
     "bcrypt": "^1.0.3",
-    "cassandra-driver": "^3.3.0",
     "dotenv": "^5.0.1",
     "express": "^4.16.2",
     "jsonwebtoken": "^8.1.1",
