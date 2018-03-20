@@ -47,14 +47,14 @@ const fetchUserInfo = (client, collection, email, callback) => {
     });
 };
 
-const dropRecipeTable = (client, collection, next) => {
+const dropUserTable = (client, collection, next) => {
     collection.drop(() => client.close(next));
 };
 
 module.exports.clean = (callback) => {
     async.waterfall([
         connect,
-        dropRecipeTable
+        dropUserTable
     ], callback);
 };
 
