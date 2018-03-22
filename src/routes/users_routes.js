@@ -10,4 +10,5 @@ app.get("/user_info", usersController.getUserInfo);
 app.post("/login", usersController.login);
 
 app.post("/likes_recipe", usersController.likesRecipe);
+app.post("/unlikes_recipe", usersController.unlikesRecipe);
 module.exports = app;

@@ -45,7 +45,16 @@ module.exports.likesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
     async.waterfall([
         (next) => usersModel.verifyTokenAndGetUserInfo(token, next),
         ({email}, next) => usersModel.connect(
-            (err, client, collection) => usersModel.likeRecipe(client, collection, email, recipeId, next)
+            (err, client, collection) => usersModel.likesRecipe(client, collection, email, recipeId, next)
+        )
+    ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined));
+};
+
+module.exports.unlikesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
+    async.waterfall([
+        (next) => usersModel.verifyTokenAndGetUserInfo(token, next),
+        ({email}, next) => usersModel.connect(
+            (err, client, collection) => usersModel.unlikesRecipe(client, collection, email, recipeId, next)
         )
     ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined));
 };

@@ -95,6 +95,10 @@ module.exports.verifyTokenAndGetUserInfo = (token, callback) => {
     auth.verifyToken(token, callback);
 };
 
-module.exports.likeRecipe = (client, collection, email, recipeId, callback) => {
-    collection.findOneAndUpdate({email}, {$push :{recipeId}}, callback);
+module.exports.likesRecipe = (client, collection, email, recipeId, callback) => {
+    collection.findOneAndUpdate({email}, {$push: {recipeId}}, () => client.close(callback));
+};
+
+module.exports.unlikesRecipe = (client, collection, email, recipeId, callback) => {
+    collection.findOneAndUpdate({email}, {$pull: {recipeId}}, () => client.close(callback));
 };
