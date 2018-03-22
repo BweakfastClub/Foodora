@@ -1,7 +1,6 @@
 const async = require("async");
-const {url} = require("../../config");
 const mongoClient = require("mongodb").MongoClient;
-const {env} = require("../../config");
+const {env, url} = require("../../config");
 const auth = require("../services/auth");
 
 const connect = (next) => {
@@ -10,6 +9,8 @@ const connect = (next) => {
         next(err, client, client.db(env).collection("users"));
     });
 };
+
+module.exports.connect = connect;
 
 const selectAllUsers = (client, collection, next) => {
     collection.find({}).toArray((err, items) => {
@@ -41,7 +42,7 @@ const storeUser = (client, collection, name, email, hashedPassword, callback) =>
 const fetchUserInfo = (client, collection, email, callback) => {
     collection.findOne({email}, (err, result) => {
         if (!result) {
-            return callback({message: "username does not exist"});
+            return callback({message: "user does not exist"});
         }
         callback(err, result);
     });
@@ -88,4 +89,12 @@ module.exports.login = (email, password, callback) => {
         (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
         (userInfo, next) => auth.issueToken(userInfo, next)
     ], callback);
+};
+
+module.exports.verifyTokenAndGetUserInfo = (token, callback) => {
+    auth.verifyToken(token, callback);
+};
+
+module.exports.likeRecipe = (client, collection, email, recipeId, callback) => {
+    collection.findOneAndUpdate({email}, {$push :{recipeId}}, callback);
 };
