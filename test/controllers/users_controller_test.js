@@ -159,5 +159,55 @@ describe("Endpoints exists for users", () => {
                 });
         });
     });
+
+    describe("likes recipes tests", () => {
+        it("likes a recipe successfully", (done) => {
+            chai.request(usersRoutes).
+                post("/users").
+                set("content-type", "application/json").
+                send({
+                    email: "user2@email.com",
+                    name: "user2",
+                    password: "1234"
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    chai.request(usersRoutes).
+                        post("/users/login").
+                        set("content-type", "application/json").
+                        send({
+                            email: "user2@email.com",
+                            password: "1234"
+                        }).
+                        end((loginErr, loginRes) => {
+                            should.not.exist(loginErr);
+                            loginRes.should.have.status(200);
+                            should.exist(loginRes.body.token);
+                            chai.request(usersRoutes).
+                                post("/users/likes_recipe").
+                                set("content-type", "application/json").
+                                set("token", loginRes.body.token).
+                                send({recipeId: "1234"}).
+                                end((likeErr, likeRes) => {
+                                    should.not.exist(likeErr);
+                                    likeRes.should.have.status(200);
+                                    chai.request(usersRoutes).
+                                        get("/users/user_info").
+                                        set("content-type", "application/json").
+                                        set("token", loginRes.body.token).
+                                        end((userInfoErr, userInfoRes) => {
+                                            should.not.exist(userInfoErr);
+                                            userInfoRes.should.have.status(200);
+                                            should.exist(userInfoRes.body);
+                                            console.log(userInfoRes.body);
+                                            done();
+                                        });
+                                });
+                        });
+                });
+        });
+
+    })
 });
 
