@@ -91,14 +91,18 @@ module.exports.login = (email, password, callback) => {
     ], callback);
 };
 
-module.exports.verifyTokenAndGetUserInfo = (token, callback) => {
+module.exports.verifyToken = (token, callback) => {
     auth.verifyToken(token, callback);
 };
 
+module.exports.getUserInfo = (client, collection, email, callback) => {
+    collection.findOne({email}, {"projection": {"hashedPassword": 0, "_id": 0}}, (err, result) => client.close(() => callback(err, result)))
+}
+
 module.exports.likesRecipe = (client, collection, email, recipeId, callback) => {
-    collection.findOneAndUpdate({email}, {$push: {recipeId}}, () => client.close(callback));
+    collection.findOneAndUpdate({email}, {$push: {likedRecipes: recipeId}}, () => client.close(callback));
 };
 
 module.exports.unlikesRecipe = (client, collection, email, recipeId, callback) => {
-    collection.findOneAndUpdate({email}, {$pull: {recipeId}}, () => client.close(callback));
+    collection.findOneAndUpdate({email}, {$pull: {likedRecipes: recipeId}}, () => client.close(callback));
 };

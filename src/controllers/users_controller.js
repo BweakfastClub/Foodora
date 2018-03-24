@@ -36,14 +36,20 @@ module.exports.login = ({body: {email = null, password = null}}, res) => {
 };
 
 module.exports.getUserInfo = ({headers: {token}}, res) => {
-    usersModel.verifyTokenAndGetUserInfo(token, (err, userInfo) => {
-        res.status(err ? 500 : 200).json(err ? undefined : {userInfo});
-    });
+    async.waterfall([
+        (next) => usersModel.verifyToken(token, next),
+        ({email}, next) => usersModel.connect((err, client, collection) => {
+            if (err) {
+                return res.status(err).json(err);
+            }
+            usersModel.getUserInfo(client, collection, email, next);
+        })
+    ], (err, userInfo) => res.status(err ? 500 : 200).json(err ? err : userInfo));
 };
 
 module.exports.likesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
     async.waterfall([
-        (next) => usersModel.verifyTokenAndGetUserInfo(token, next),
+        (next) => usersModel.verifyToken(token, next),
         ({email}, next) => usersModel.connect((err, client, collection) => {
             if (err) {
                 return res.status(err).json(err);
@@ -55,7 +61,7 @@ module.exports.likesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
 
 module.exports.unlikesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
     async.waterfall([
-        (next) => usersModel.verifyTokenAndGetUserInfo(token, next),
+        (next) => usersModel.verifyToken(token, next),
         ({email}, next) => usersModel.connect((err, client, collection) => {
             if (err) {
                 return res.status(err).json(err);
