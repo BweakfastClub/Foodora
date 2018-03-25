@@ -3,6 +3,7 @@ const usersModel = require("../../src/models/users_model");
 const chai = require("chai"),
     chaiHttp = require("chai-http");
 const should = chai.should();
+const expect = chai.expect;
 
 chai.use(chaiHttp);
 
@@ -199,8 +200,9 @@ describe("Endpoints exists for users", () => {
                                         end((userInfoErr, userInfoRes) => {
                                             should.not.exist(userInfoErr);
                                             userInfoRes.should.have.status(200);
-                                            should.exist(userInfoRes.body);
-                                            console.log(userInfoRes.body);
+                                            should.exist(userInfoRes.body.likedRecipes);
+                                            expect(userInfoRes.body.likedRecipes[0]).to.equal("1234");
+                                            // console.log(userInfoRes.body.likedRecipe);
                                             done();
                                         });
                                 });
