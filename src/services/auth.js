@@ -1,7 +1,7 @@
 const bcrypt = require("bcrypt");
 const saltRounds = 10;
 const jwt = require("jsonwebtoken");
-const config = require("./config");
+const {jwtSecret} = require("./config");
 
 module.exports.hashPassword = (password, next) => {
     bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
@@ -30,7 +30,11 @@ module.exports.issueToken = ({name, email}, next) => {
     const token = jwt.sign({
         email,
         name
-    }, config.jwtSecret);
+    }, jwtSecret);
 
     next(null, token);
+};
+
+module.exports.verifyToken = (token, next) => {
+    jwt.verify(token, jwtSecret, next);
 };

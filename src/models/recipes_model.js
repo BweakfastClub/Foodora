@@ -1,8 +1,7 @@
 /* eslint-disable max-lines */
 const async = require("async");
-const {url} = require("../../config");
 const mongoClient = require("mongodb").MongoClient;
-const {env} = require("../../config");
+const {env, url} = require("../../config");
 
 const connect = (next) => {
     mongoClient.connect(url, (err, client) => {

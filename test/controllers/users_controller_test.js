@@ -3,6 +3,7 @@ const usersModel = require("../../src/models/users_model");
 const chai = require("chai"),
     chaiHttp = require("chai-http");
 const should = chai.should();
+const {expect} = chai;
 
 chai.use(chaiHttp);
 
@@ -159,5 +160,98 @@ describe("Endpoints exists for users", () => {
                 });
         });
     });
-});
 
+    describe("likes recipes tests", () => {
+
+        let userToken = null;
+
+        beforeEach((done) => {
+            chai.request(usersRoutes).
+                post("/users").
+                set("content-type", "application/json").
+                send({
+                    email: "user2@email.com",
+                    name: "user2",
+                    password: "1234"
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    chai.request(usersRoutes).
+                        post("/users/login").
+                        set("content-type", "application/json").
+                        send({
+                            email: "user2@email.com",
+                            password: "1234"
+                        }).
+                        end((loginErr, loginRes) => {
+                            should.not.exist(loginErr);
+                            loginRes.should.have.status(200);
+                            should.exist(loginRes.body.token);
+                            userToken = loginRes.body.token;
+                            done();
+                        });
+                });
+        });
+
+        afterEach((done) => {
+            usersModel.clean(done);
+        });
+
+        it("likes a recipe successfully", (done) => {
+            chai.request(usersRoutes).
+                post("/users/likes_recipe").
+                set("content-type", "application/json").
+                set("token", userToken).
+                send({recipeId: "1234"}).
+                end((likeErr, likeRes) => {
+                    should.not.exist(likeErr);
+                    likeRes.should.have.status(200);
+                    chai.request(usersRoutes).
+                        get("/users/user_info").
+                        set("content-type", "application/json").
+                        set("token", userToken).
+                        end((userInfoErr, userInfoRes) => {
+                            should.not.exist(userInfoErr);
+                            userInfoRes.should.have.status(200);
+                            should.exist(userInfoRes.body.likedRecipes);
+                            expect(userInfoRes.body.likedRecipes[0]).to.equal("1234");
+                            done();
+                        });
+                });
+        });
+
+        it("unlikes a recipe successfully", (done) => {
+            chai.request(usersRoutes).
+                post("/users/likes_recipe").
+                set("content-type", "application/json").
+                set("token", userToken).
+                send({recipeId: "2345"}).
+                end((likeErr, likeRes) => {
+                    should.not.exist(likeErr);
+                    likeRes.should.have.status(200);
+                    chai.request(usersRoutes).
+                        post("/users/unlikes_recipe").
+                        set("content-type", "application/json").
+                        set("token", userToken).
+                        send({recipeId: "2345"}).
+                        end((unlikeRecipeErr, unlikeRecipeRes) => {
+                            should.not.exist(unlikeRecipeErr);
+                            unlikeRecipeRes.should.have.status(200);
+                            chai.request(usersRoutes).
+                                get("/users/user_info").
+                                set("content-type", "application/json").
+                                set("token", userToken).
+                                end((userInfoErr, userInfoRes) => {
+                                    should.not.exist(userInfoErr);
+                                    userInfoRes.should.have.status(200);
+                                    should.exist(userInfoRes.body.likedRecipes);
+                                    /* eslint-disable no-unused-expressions */
+                                    expect(userInfoRes.body.likedRecipes).to.be.empty;
+                                    done();
+                                });
+                        })
+                });
+        });
+    });
+});
