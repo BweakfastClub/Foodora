@@ -8,6 +8,7 @@ if (env !== "testing") {
 
 app.get("/", recipesController.findAllRecipes);
 app.get("/search", recipesController.searchRecipes);
+app.get("/id/:recipeId", recipesController.selectRecipeById);
 app.get("/python_test", recipesController.callPythonScriptTest);
 app.get("/process_json", recipesController.processRecipesJson);
 

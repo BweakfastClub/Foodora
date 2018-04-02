@@ -16,10 +16,23 @@ const selectAllRecipes = (client, collection, next) => {
     });
 };
 
+const selectRecipeById = (client, collection, id, next) => {
+    collection.findOne({_id: id}, (err, item) => {
+        client.close(() => next(err, item));
+    });
+};
+
 module.exports.allRecipes = (callback) => {
     async.waterfall([
         connect,
         selectAllRecipes
+    ], callback);
+};
+
+module.exports.selectRecipeById = (id, callback) => {
+    async.waterfall([
+        connect,
+        (client, collection, next) => selectRecipeById(client, collection, parseInt(id, 10), next)
     ], callback);
 };
 
@@ -64,7 +77,7 @@ module.exports.setup = (callback) => {
         connect,
         function tempInsert(client, collection, next) {
             collection.insertMany([
-                {"id": 14556,
+                {"_id": 14556,
                     "ingredients": [
                         {"ingredientID": 1525,
                             "displayValue": "3 tablespoons brown sugar",
@@ -213,7 +226,7 @@ module.exports.setup = (callback) => {
                     "prepMinutes": 10,
                     "cookMinutes": 0,
                     "readyMinutes": 0},
-                {"id": 23600,
+                {"_id": 23600,
                     "ingredients": [
                         {"ingredientID": 5838,
                             "displayValue": "1 pound sweet Italian sausage",
