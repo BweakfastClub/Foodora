@@ -40,6 +40,17 @@ describe("Endpoints exists for recipes", () => {
         });
     });
 
+    describe("/GET recipes by Id", () => {
+        it("get recipe by Id should return an existing recipe", (done) => {
+            chai.request(recipeRoutes).
+                get("/recipes/id/25449").
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    done();
+                });
+        });
+    });
 
 });
 

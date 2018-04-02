@@ -29,6 +29,16 @@ module.exports.callPythonScriptTest = (req, res) => {
     });
 };
 
+module.exports.selectRecipeById = ({params: {recipeId = null}}, res) => {
+    if (recipeId === null) {
+        return res.status(400).json("Please enter the recipe Id");
+    }
+
+    recipesModel.selectRecipeById(recipeId, (err, result) => {
+        res.status(err ? 500 : 200).json(err ? undefined : result);
+    });
+}
+
 module.exports.processRecipesJson = (req, res) => {
     const rawRecipeData = fs.readFileSync("data/recipes/magazine_favourites.json");
     const recipes = JSON.parse(rawRecipeData);

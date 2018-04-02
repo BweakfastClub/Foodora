@@ -16,10 +16,23 @@ const selectAllRecipes = (client, collection, next) => {
     });
 };
 
+const selectRecipeById = (client, collection, id, next) => {
+    collection.findOne({id}, (err, item) => {
+        client.close(() => next(err, item));
+    });
+};
+
 module.exports.allRecipes = (callback) => {
     async.waterfall([
         connect,
         selectAllRecipes
+    ], callback);
+};
+
+module.exports.selectRecipeById = (id, callback) => {
+    async.waterfall([
+        connect,
+        (client, collection, next) => selectRecipeById(client, collection, parseInt(id, 10), next)
     ], callback);
 };
 
