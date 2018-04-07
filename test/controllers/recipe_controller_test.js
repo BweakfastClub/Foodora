@@ -29,7 +29,7 @@ describe("Endpoints exists for recipes", () => {
     });
 
     describe("/POST search/filter recipes", () => {
-        it("the search recipe should get recipes", (done) => {
+        it("should return a list of recipes with a keyword search", (done) => {
             chai.request(recipeRoutes).
                 post("/recipes/search").
                 set("content-type", "application/json").
@@ -47,6 +47,31 @@ describe("Endpoints exists for recipes", () => {
                     done();
                 });
         });
+
+        it("should return a list of recipes with a keyword and caloric filter", (done) => {
+            chai.request(recipeRoutes).
+                post("/recipes/search").
+                set("content-type", "application/json").
+                send({
+                    "query": {
+                        "$text": {
+                            "$search": "pork"
+                        }, 
+                        "nutrition.calories.amount": {
+                            "$lt": 500
+                        }
+                    }
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    res.body.should.be.a("array");
+                    for (let recipe of res.body) {
+                        expect(recipe.nutrition.calories.amount).to.be.below(500)
+                    }
+                    done();
+                });
+        });
     });
 
     describe("/GET recipes by Id", () => {
@@ -58,7 +83,6 @@ describe("Endpoints exists for recipes", () => {
                     res.should.have.status(200);
                     expect(res.body).to.not.be.empty;
                     expect(res.body.id).to.equal(25449);
-                    console.log(res.body)
                     done();
                 });
         });
