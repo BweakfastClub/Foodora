@@ -3,6 +3,7 @@ const recipeModel = require("../../src/models/recipes_model");
 const chai = require("chai"),
     chaiHttp = require("chai-http");
 const should = chai.should();
+const {expect} = chai;
 
 chai.use(chaiHttp);
 
@@ -27,10 +28,18 @@ describe("Endpoints exists for recipes", () => {
         });
     });
 
-    describe("/GET recipes by title", () => {
-        it("the get recipes/search should get recipes", (done) => {
+    describe("/POST search/filter recipes", () => {
+        it("the search recipe should get recipes", (done) => {
             chai.request(recipeRoutes).
-                get("/recipes/search?keyword=reci").
+                post("/recipes/search").
+                set("content-type", "application/json").
+                send({
+                    "query": {
+                        "$text": {
+                            "$search": "pork"
+                        }
+                    }
+                }).
                 end((err, res) => {
                     should.not.exist(err);
                     res.should.have.status(200);
@@ -47,6 +56,9 @@ describe("Endpoints exists for recipes", () => {
                 end((err, res) => {
                     should.not.exist(err);
                     res.should.have.status(200);
+                    expect(res.body).to.not.be.empty;
+                    expect(res.body.id).to.equal(25449);
+                    console.log(res.body)
                     done();
                 });
         });
