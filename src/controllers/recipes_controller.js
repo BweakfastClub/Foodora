@@ -12,8 +12,8 @@ module.exports.findAllRecipes = (req, res) => {
     });
 };
 
-module.exports.searchRecipes = ({query: {keyword = null}}, res) => {
-    recipesModel.search(keyword, (err, result) => {
+module.exports.searchRecipes = ({body: {query = null}}, res) => {
+    recipesModel.search(query, (err, result) => {
         if (err) {
             console.log(err);
         }

@@ -36,12 +36,8 @@ module.exports.selectRecipeById = (id, callback) => {
     ], callback);
 };
 
-const searchRecipesCollection = (client, collection, keyword, next) => {
-    collection.find({
-        $text: {
-            $search: keyword
-        }
-    }).toArray((err, items) => {
+const searchRecipesCollection = (client, collection, query, next) => {
+    collection.find(query).toArray((err, items) => {
         client.close(() => next(err, items));
     });
 };
@@ -63,10 +59,10 @@ const createIndex = (client, collection, next) => {
     }, next);
 };
 
-module.exports.search = (keyword, callback) => {
+module.exports.search = (query, callback) => {
     async.waterfall([
         connect,
-        (client, collection, next) => searchRecipesCollection(client, collection, keyword, next)
+        (client, collection, next) => searchRecipesCollection(client, collection, query, next)
     ], callback);
 };
 
