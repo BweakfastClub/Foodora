@@ -71,3 +71,5 @@ fabric.properties
 .env
 
 # End of https://www.gitignore.io/api/webstorm
+
+.nyc_output
