@@ -52,6 +52,10 @@ const dropUserTable = (client, collection, next) => {
     collection.drop(() => client.close(next));
 };
 
+const createEmailUniqueIndex = (client, collection, next) => {
+    collection.createIndex({"email" : 1}, {unique : true}, next);
+};
+
 module.exports.clean = (callback) => {
     async.waterfall([
         connect,
@@ -105,4 +109,13 @@ module.exports.likesRecipe = (client, collection, email, recipeId, callback) => 
 
 module.exports.unlikesRecipe = (client, collection, email, recipeId, callback) => {
     collection.findOneAndUpdate({email}, {$pull: {likedRecipes: recipeId}}, () => client.close(callback));
+};
+
+module.exports.setup = (callback) => {
+    console.log("setting up recipes");
+    async.waterfall([
+        connect,
+        createEmailUniqueIndex
+    ],
+    callback);
 };

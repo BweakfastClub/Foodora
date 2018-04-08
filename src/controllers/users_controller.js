@@ -1,6 +1,10 @@
 const async = require("async");
 const usersModel = require("../models/users_model");
 
+module.exports.setUp = () => {
+    usersModel.setup();
+};
+
 module.exports.findAllUsers = (req, res) => {
     usersModel.findAllUsers((err, users) => {
         res.status(err ? 500 : 200).json(err ? undefined : users);
@@ -14,6 +18,9 @@ module.exports.register = ({body: {name = null, email = null, password = null}},
         });
     }
     usersModel.registerUser(name, email, password, (err) => {
+        if(err && err.code == 11000){
+            return res.status(409).json({"error": email + " is already used, please use another email."})
+        }
         res.status(err ? 500 : 200).json();
     });
 };
