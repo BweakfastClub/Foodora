@@ -8,11 +8,17 @@ const {expect} = chai;
 chai.use(chaiHttp);
 
 describe("Endpoints exists for users", () => {
-    after((done) => {
-        usersModel.clean(done);
-    });
 
     describe("/GET users", () => {
+
+        beforeEach((done) => {
+            usersModel.setup(done);
+        });
+        
+        afterEach((done) => {
+            usersModel.clean(done);
+        });
+
         it("the get users endpoint should exist", (done) => {
             chai.request(usersRoutes).
                 get("/users").
@@ -25,6 +31,14 @@ describe("Endpoints exists for users", () => {
     });
 
     describe("/POST users", () => {
+        beforeEach((done) => {
+            usersModel.setup(done);
+        });
+
+        afterEach((done) => {
+            usersModel.clean(done);
+        });
+
         it("Post user requires name", (done) => {
             chai.request(usersRoutes).
                 post("/users").
@@ -69,25 +83,62 @@ describe("Endpoints exists for users", () => {
                     done();
                 });
         });
-    });
 
-    it("Post user successful", (done) => {
-        chai.request(usersRoutes).
-            post("/users").
-            set("content-type", "application/json").
-            send({
-                email: "user@email.com",
-                name: "user",
-                password: "1234"
-            }).
-            end((err, res) => {
-                should.not.exist(err);
-                res.should.have.status(200);
-                done();
-            });
+        it("Post user successful", (done) => {
+            chai.request(usersRoutes).
+                post("/users").
+                set("content-type", "application/json").
+                send({
+                    email: "user@email.com",
+                    name: "user",
+                    password: "1234"
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    done();
+                });
+        });
+
+        it("Post user fails with email that is already registered", (done) => {
+            chai.request(usersRoutes).
+                post("/users").
+                set("content-type", "application/json").
+                send({
+                    email: "user@email.com",
+                    name: "user",
+                    password: "1234"
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    chai.request(usersRoutes).
+                        post("/users").
+                        set("content-type", "application/json").
+                        send({
+                            email: "user@email.com",
+                            name: "user",
+                            password: "1234"
+                        }).
+                        end((err, res) => {
+                            should.exist(err);
+                            res.should.have.status(409);
+                            done();
+                        });
+                });
+        });
     });
 
     describe("login tests", () => {
+
+        beforeEach((done) => {
+            usersModel.setup(done);
+        });
+
+        afterEach((done) => {
+            usersModel.clean(done);
+        });
+
         it("logs in succesfully after user registration and issues a token", (done) => {
             chai.request(usersRoutes).
                 post("/users").
@@ -166,7 +217,7 @@ describe("Endpoints exists for users", () => {
         let userToken = null;
 
         beforeEach((done) => {
-            chai.request(usersRoutes).
+            usersModel.setup(() => chai.request(usersRoutes).
                 post("/users").
                 set("content-type", "application/json").
                 send({
@@ -191,7 +242,8 @@ describe("Endpoints exists for users", () => {
                             userToken = loginRes.body.token;
                             done();
                         });
-                });
+                })
+            );
         });
 
         afterEach((done) => {

@@ -53,7 +53,7 @@ module.exports.clean = (callback) => {
     ], callback);
 };
 
-const createIndex = (client, collection, next) => {
+const createSearchIndex = (client, collection, next) => {
     collection.createIndex({
         "$**": "text"
     }, next);
@@ -78,9 +78,9 @@ module.exports.setup = (callback) => {
             });
         },
         connect,
-        createIndex
-    ]
-    , callback);
+        createSearchIndex
+    ],
+     callback);
 };
 
 
