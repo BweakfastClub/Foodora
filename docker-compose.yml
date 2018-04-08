@@ -1,0 +1,16 @@
+version: "3.1"
+
+services:
+    foodora:
+        image: foodora/backend
+        restart: on-failure
+        ports:
+            - "8080:8080"
+        depends_on:
+            - foodora-db
+        links:
+          - foodora-db
+    foodora-db:
+        image: mongo:3.4
+        ports:
+            - "27017:27017"
