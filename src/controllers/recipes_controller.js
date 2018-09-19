@@ -40,7 +40,7 @@ module.exports.selectRecipeById = ({params: {recipeId = null}}, res) => {
 }
 
 module.exports.processRecipesJson = (req, res) => {
-    const rawRecipeData = fs.readFileSync("data/recipes/magazine_favourites.json");
+    const rawRecipeData = fs.readFileSync("data/recipes/recipes.json");
     const recipes = JSON.parse(rawRecipeData);
 
     const ingredientsList = recipes.map(({id, ingredients}) => ({
@@ -49,7 +49,7 @@ module.exports.processRecipesJson = (req, res) => {
     }));
 
 
-    const pythonProcess = spawn("python", ["tensorflow_test.py"]);
+    const pythonProcess = spawn("python", ["recommender.py"]);
 
     pythonProcess.stdin.write(JSON.stringify(ingredientsList));
     pythonProcess.stdin.end();
