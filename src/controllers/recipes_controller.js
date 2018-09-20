@@ -2,6 +2,11 @@ const recipesModel = require("../models/recipes_model");
 const {spawn} = require("child_process");
 const fs = require("fs");
 
+const PYTHON_MODES = {
+    PROCESS: "PROCESS",
+    RECOMMEND: "RECOMMEND"
+}
+
 module.exports.setUp = () => {
     recipesModel.setup();
 };
@@ -49,7 +54,7 @@ module.exports.processRecipesJson = (req, res) => {
     }));
 
 
-    const pythonProcess = spawn("python", ["recommender.py"]);
+    const pythonProcess = spawn("python", ["recommender.py", PYTHON_MODES.PROCESS]);
 
     pythonProcess.stdin.write(JSON.stringify(ingredientsList));
     pythonProcess.stdin.end();
@@ -66,5 +71,28 @@ module.exports.processRecipesJson = (req, res) => {
 
     pythonProcess.stdout.on("end", () => {
         res.status(200).json(dataString.toString());
+    });
+};
+
+
+module.exports.recommendRecipe = ({params: {recipeId = null}}, res) => {
+    if (recipeId === null) {
+        return res.status(400).json("Please enter the recipe Id");
+    }
+
+    const pythonProcess = spawn("python", ["recommender.py", PYTHON_MODES.RECOMMEND, recipeId]);
+
+    let dataString = "";
+
+    pythonProcess.stdout.on("data", (data) => {
+        dataString += data;
+    });
+
+    pythonProcess.stderr.on("data", (error) => { 
+        console.error(error.toString());
+    });
+
+    pythonProcess.stdout.on("end", () => {
+        res.status(200).json(JSON.parse(dataString.toString()));
     });
 };

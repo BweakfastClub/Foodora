@@ -4,6 +4,7 @@ import numpy
 import pandas
 from sklearn.cluster import KMeans
 from sklearn.neighbors import KDTree
+import pickle
 
 def read_in():
 	lines = sys.stdin.readlines()
@@ -11,9 +12,15 @@ def read_in():
 	return line
 
 def main():
-	json_data = read_in()
-	ingredients_as_list = process_recipes(json_data)
-	print(recommend_recipes_by_ingredients(51147, 6, ingredients_as_list))
+	mode = sys.argv[1]
+	if mode == "PROCESS":
+		json_data = read_in()
+		ingredients_as_list = process_recipes(json_data)
+		pickle.dump(ingredients_as_list, open("tree.p", "wb"))
+	elif mode == "RECOMMEND":
+		recipe_id = int(sys.argv[2])
+		ingredients_as_list = pickle.load(open("tree.p", "rb"))
+		print(recommend_recipes_by_ingredients(recipe_id, 6, ingredients_as_list))
 
 def process_recipes(recipe_data):
    	recipe_data_frame = pandas.read_json(recipe_data)
