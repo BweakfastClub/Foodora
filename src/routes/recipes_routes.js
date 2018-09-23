@@ -12,4 +12,6 @@ app.get("/id/:recipeId", recipesController.selectRecipeById);
 app.get("/python_test", recipesController.callPythonScriptTest);
 app.get("/process_json", recipesController.processRecipesJson);
 
+app.post("/plan_meal", recipesController.planMeals);
+
 module.exports = app;

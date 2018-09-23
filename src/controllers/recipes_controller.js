@@ -1,6 +1,7 @@
 const recipesModel = require("../models/recipes_model");
 const {spawn} = require("child_process");
 const fs = require("fs");
+const async = require("async")
 
 module.exports.setUp = () => {
     recipesModel.setup();
@@ -66,5 +67,17 @@ module.exports.processRecipesJson = (req, res) => {
 
     pythonProcess.stdout.on("end", () => {
         res.status(200).json(dataString.toString());
-    });
+    });    
 };
+
+module.exports.planMeals = ({body: {recipeIds = null}}, res) => {
+    const recipeIdQueries = recipeIds.map(recipeId => (callback) => recipesModel.selectRecipeById(recipeId, callback))
+
+    async.parallel(recipeIdQueries, (err, results) => {
+        let totalCalories = 0
+        results.forEach(({nutrition: {calories: {amount=0}}}) => {
+            totalCalories+= amount 
+        })
+        res.status(200).json(totalCalories)
+    })
+}
