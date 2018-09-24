@@ -9,7 +9,7 @@ if (env !== "testing") {
 app.get("/", recipesController.findAllRecipes);
 app.post("/search", recipesController.searchRecipes);
 app.get("/id/:recipeId", recipesController.selectRecipeById);
-app.get("/python_test", recipesController.callPythonScriptTest);
+app.get("/recommend/:recipeId", recipesController.recommendRecipe);
 app.get("/process_json", recipesController.processRecipesJson);
 
 module.exports = app;
