@@ -59,8 +59,8 @@ describe("Endpoints exists for users", () => {
                 post("/users").
                 set("content-type", "application/json").
                 send({
-                    email: "user@email.com",
-                    name: "user"
+                    name: "user",
+                    password: "1234"
                 }).
                 end((err, res) => {
                     should.exist(err);
@@ -74,8 +74,8 @@ describe("Endpoints exists for users", () => {
                 post("/users").
                 set("content-type", "application/json").
                 send({
-                    name: "user",
-                    password: "1234"
+                    email: "user@email.com",
+                    name: "user"
                 }).
                 end((err, res) => {
                     should.exist(err);
@@ -212,6 +212,64 @@ describe("Endpoints exists for users", () => {
         });
     });
 
+    describe("/Delete users", () => {
+
+        it("Delete user require password", (done) => {
+            chai.request(usersRoutes).
+                del("/users").
+                set("content-type", "application/json").
+                send({
+                    email: "user4@email.com"
+                }).
+                end((__, delRes) => {
+                    should.exist(delRes);
+                    delRes.should.have.status(200);
+                    done();
+                });
+        });
+
+        it("Delete user require email", (done) => {
+            chai.request(usersRoutes).
+                del("/users").
+                set("content-type", "application/json").
+                send({
+                    password: "1234"
+                }).
+                end((__, delRes) => {
+                    should.exist(delRes);
+                    delRes.should.have.status(200);
+                    done();
+                });
+        });
+
+        it("Delete user successfully", (done) => {
+            chai.request(usersRoutes).
+                post("/users").
+                set("content-type", "application/json").
+                send({
+                    email: "user3@email.com",
+                    name: "user3",
+                    password: "1234"
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    chai.request(usersRoutes).
+                        del("/users").
+                        set("content-type", "application/json").
+                        send({
+                            email: "user3@email.com",
+                            password: "1234"
+                        }).
+                        end((__, delRes) => {
+                            should.exist(delRes);
+                            delRes.should.have.status(200);
+                            done();
+                        });
+                });
+        });
+    });
+
     describe("likes recipes tests", () => {
 
         let userToken = null;
@@ -239,11 +297,10 @@ describe("Endpoints exists for users", () => {
                             should.not.exist(loginErr);
                             loginRes.should.have.status(200);
                             should.exist(loginRes.body.token);
-                            userToken = loginRes.body.token;
+                            userToken = loginRes.body.token.token;
                             done();
                         });
-                })
-            );
+                }));
         });
 
         afterEach((done) => {
@@ -302,7 +359,7 @@ describe("Endpoints exists for users", () => {
                                     expect(userInfoRes.body.likedRecipes).to.be.empty;
                                     done();
                                 });
-                        })
+                        });
                 });
         });
     });
