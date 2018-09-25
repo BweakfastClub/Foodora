@@ -68,9 +68,7 @@ const authorizeUser = (obj, next) => {
 
 const getToken = (obj, next) => {
     auth.issueToken(obj.userInfo, (err, token) => {
-        const res = {token};
-
-        next(err, res);
+        next(err, token);
     });
 };
 

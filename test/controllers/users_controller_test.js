@@ -258,7 +258,7 @@ describe("Endpoints exists for users", () => {
                     should.not.exist(loginErr);
                     loginRes.should.have.status(200);
                     should.exist(loginRes.body.token);
-                    userToken = loginRes.body.token.token;
+                    userToken = loginRes.body.token;
                     done();
                 });
         });
