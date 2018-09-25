@@ -42,7 +42,7 @@ module.exports.selectRecipeById = ({params: {recipeId = null}}, res) => {
     recipesModel.selectRecipeById(recipeId, (err, result) => {
         res.status(err ? 500 : 200).json(err ? undefined : result);
     });
-}
+};
 
 module.exports.processRecipesJson = (req, res) => {
     const rawRecipeData = fs.readFileSync("data/recipes/recipes.json");
@@ -73,7 +73,6 @@ module.exports.processRecipesJson = (req, res) => {
         res.status(200).json(dataString.toString());
     });
 };
-
 
 module.exports.recommendRecipe = ({params: {recipeId = null}}, res) => {
     if (recipeId === null) {
