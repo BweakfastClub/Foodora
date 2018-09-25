@@ -9,16 +9,39 @@ chai.use(chaiHttp);
 
 describe("Endpoints exists for users", () => {
 
+    before((done) => {
+        usersModel.setup(()=> chai.request(usersRoutes).
+            post("/users").
+            set("content-type", "application/json").
+            send({
+                email: "user@email.com",
+                name: "user",
+                password: "1234"
+            }).
+            end((err, res) => {
+                should.not.exist(err);
+                res.should.have.status(200);
+                chai.request(usersRoutes).
+                    post("/users").
+                    set("content-type", "application/json").
+                    send({
+                        email: "deleteUser@email.com",
+                        name: "deleteUser",
+                        password: "1234"
+                    }).
+                    end((err, res) => {
+                        should.not.exist(err);
+                        res.should.have.status(200);
+                        done();
+                    });
+            }));
+    });
+
+    after((done) => {
+        usersModel.clean(done);
+    });
+
     describe("/GET users", () => {
-
-        beforeEach((done) => {
-            usersModel.setup(done);
-        });
-        
-        afterEach((done) => {
-            usersModel.clean(done);
-        });
-
         it("the get users endpoint should exist", (done) => {
             chai.request(usersRoutes).
                 get("/users").
@@ -31,13 +54,6 @@ describe("Endpoints exists for users", () => {
     });
 
     describe("/POST users", () => {
-        beforeEach((done) => {
-            usersModel.setup(done);
-        });
-
-        afterEach((done) => {
-            usersModel.clean(done);
-        });
 
         it("Post user requires name", (done) => {
             chai.request(usersRoutes).
@@ -89,8 +105,8 @@ describe("Endpoints exists for users", () => {
                 post("/users").
                 set("content-type", "application/json").
                 send({
-                    email: "user@email.com",
-                    name: "user",
+                    email: "createUser@email.com",
+                    name: "createUser",
                     password: "1234"
                 }).
                 end((err, res) => {
@@ -110,42 +126,21 @@ describe("Endpoints exists for users", () => {
                     password: "1234"
                 }).
                 end((err, res) => {
-                    should.not.exist(err);
-                    res.should.have.status(200);
-                    chai.request(usersRoutes).
-                        post("/users").
-                        set("content-type", "application/json").
-                        send({
-                            email: "user@email.com",
-                            name: "user",
-                            password: "1234"
-                        }).
-                        end((err, res) => {
-                            should.exist(err);
-                            res.should.have.status(409);
-                            done();
-                        });
+                    should.exist(err);
+                    res.should.have.status(409);
+                    done();
                 });
         });
     });
 
     describe("login tests", () => {
-
-        beforeEach((done) => {
-            usersModel.setup(done);
-        });
-
-        afterEach((done) => {
-            usersModel.clean(done);
-        });
-
         it("logs in succesfully after user registration and issues a token", (done) => {
             chai.request(usersRoutes).
                 post("/users").
                 set("content-type", "application/json").
                 send({
-                    email: "user2@email.com",
-                    name: "user2",
+                    email: "registerUser@email.com",
+                    name: "registerUser",
                     password: "1234"
                 }).
                 end((err, res) => {
@@ -155,7 +150,7 @@ describe("Endpoints exists for users", () => {
                         post("/users/login").
                         set("content-type", "application/json").
                         send({
-                            email: "user2@email.com",
+                            email: "registerUser@email.com",
                             password: "1234"
                         }).
                         end((loginErr, loginRes) => {
@@ -169,29 +164,17 @@ describe("Endpoints exists for users", () => {
 
         it("logs in failed after with incorrect password", (done) => {
             chai.request(usersRoutes).
-                post("/users").
+                post("/users/login").
                 set("content-type", "application/json").
                 send({
                     email: "user@email.com",
-                    name: "user",
-                    password: "1234"
+                    password: "wrong_password"
                 }).
-                end((err, res) => {
-                    should.not.exist(err);
-                    res.should.have.status(200);
-                    chai.request(usersRoutes).
-                        post("/users/login").
-                        set("content-type", "application/json").
-                        send({
-                            email: "user@email.com",
-                            password: "wrong_password"
-                        }).
-                        end((loginErr, loginRes) => {
-                            should.exist(loginErr);
-                            loginRes.should.have.status(401);
-                            should.not.exist(loginRes.body.token);
-                            done();
-                        });
+                end((loginErr, loginRes) => {
+                    should.exist(loginErr);
+                    loginRes.should.have.status(401);
+                    should.not.exist(loginRes.body.token);
+                    done();
                 });
         });
 
@@ -219,11 +202,11 @@ describe("Endpoints exists for users", () => {
                 del("/users").
                 set("content-type", "application/json").
                 send({
-                    email: "user4@email.com"
+                    email: "deleteUser@email.com"
                 }).
-                end((__, delRes) => {
-                    should.exist(delRes);
-                    delRes.should.have.status(200);
+                end((delErr, delRes) => {
+                    should.exist(delErr);
+                    delRes.should.have.status(400);
                     done();
                 });
         });
@@ -235,37 +218,26 @@ describe("Endpoints exists for users", () => {
                 send({
                     password: "1234"
                 }).
-                end((__, delRes) => {
-                    should.exist(delRes);
-                    delRes.should.have.status(200);
+                end((delErr, delRes) => {
+                    should.exist(delErr);
+                    delRes.should.have.status(400);
                     done();
                 });
         });
 
         it("Delete user successfully", (done) => {
             chai.request(usersRoutes).
-                post("/users").
+                del("/users").
                 set("content-type", "application/json").
                 send({
-                    email: "user3@email.com",
-                    name: "user3",
+                    email: "deleteUser@email.com",
                     password: "1234"
                 }).
-                end((err, res) => {
-                    should.not.exist(err);
-                    res.should.have.status(200);
-                    chai.request(usersRoutes).
-                        del("/users").
-                        set("content-type", "application/json").
-                        send({
-                            email: "user3@email.com",
-                            password: "1234"
-                        }).
-                        end((__, delRes) => {
-                            should.exist(delRes);
-                            delRes.should.have.status(200);
-                            done();
-                        });
+                end((delErr, delRes) => {
+                    should.not.exist(delErr);
+                    should.exist(delRes);
+                    delRes.should.have.status(200);
+                    done();
                 });
         });
     });
@@ -274,37 +246,21 @@ describe("Endpoints exists for users", () => {
 
         let userToken = null;
 
-        beforeEach((done) => {
-            usersModel.setup(() => chai.request(usersRoutes).
-                post("/users").
+        before((done) => {
+            chai.request(usersRoutes).
+                post("/users/login").
                 set("content-type", "application/json").
                 send({
-                    email: "user2@email.com",
-                    name: "user2",
+                    email: "user@email.com",
                     password: "1234"
                 }).
-                end((err, res) => {
-                    should.not.exist(err);
-                    res.should.have.status(200);
-                    chai.request(usersRoutes).
-                        post("/users/login").
-                        set("content-type", "application/json").
-                        send({
-                            email: "user2@email.com",
-                            password: "1234"
-                        }).
-                        end((loginErr, loginRes) => {
-                            should.not.exist(loginErr);
-                            loginRes.should.have.status(200);
-                            should.exist(loginRes.body.token);
-                            userToken = loginRes.body.token.token;
-                            done();
-                        });
-                }));
-        });
-
-        afterEach((done) => {
-            usersModel.clean(done);
+                end((loginErr, loginRes) => {
+                    should.not.exist(loginErr);
+                    loginRes.should.have.status(200);
+                    should.exist(loginRes.body.token);
+                    userToken = loginRes.body.token.token;
+                    done();
+                });
         });
 
         it("likes a recipe successfully", (done) => {
@@ -355,8 +311,7 @@ describe("Endpoints exists for users", () => {
                                     should.not.exist(userInfoErr);
                                     userInfoRes.should.have.status(200);
                                     should.exist(userInfoRes.body.likedRecipes);
-                                    /* eslint-disable no-unused-expressions */
-                                    expect(userInfoRes.body.likedRecipes).to.be.empty;
+                                    expect(userInfoRes.body.likedRecipes).to.not.contain("2345");
                                     done();
                                 });
                         });

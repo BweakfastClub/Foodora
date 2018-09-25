@@ -26,6 +26,11 @@ module.exports.register = ({body: {name = null, email = null, password = null}},
 };
 
 module.exports.deleteUser = ({body: {email = null, password = null}}, res) => {
+    if (!email || !password) {
+        return res.status(400).json({
+            error: "Email and Password must be provided"
+        });
+    }
     res.json(usersModel.deleteUser(email, password, (err) => {
         res.status(err ? 500 : 200).json();
     }));
@@ -34,7 +39,7 @@ module.exports.deleteUser = ({body: {email = null, password = null}}, res) => {
 module.exports.login = ({body: {email = null, password = null}}, res) => {
     if (!email || !password) {
         return res.status(400).json({
-            error: "Email, name and Password must be provided"
+            error: "Email and Password must be provided"
         });
     }
     usersModel.login(email, password, (err, token) => {
