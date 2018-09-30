@@ -26,6 +26,11 @@ module.exports.register = ({body: {name = null, email = null, password = null}},
 };
 
 module.exports.deleteUser = ({body: {email = null, password = null}}, res) => {
+    if (!email || !password) {
+        return res.status(400).json({
+            error: "Email and Password must be provided"
+        });
+    }
     res.json(usersModel.deleteUser(email, password, (err) => {
         res.status(err ? 500 : 200).json();
     }));
@@ -34,7 +39,7 @@ module.exports.deleteUser = ({body: {email = null, password = null}}, res) => {
 module.exports.login = ({body: {email = null, password = null}}, res) => {
     if (!email || !password) {
         return res.status(400).json({
-            error: "Email, name and Password must be provided"
+            error: "Email and Password must be provided"
         });
     }
     usersModel.login(email, password, (err, token) => {
@@ -45,35 +50,35 @@ module.exports.login = ({body: {email = null, password = null}}, res) => {
 module.exports.getUserInfo = ({headers: {token}}, res) => {
     async.waterfall([
         (next) => usersModel.verifyToken(token, next),
-        ({email}, next) => usersModel.connect((err, client, collection) => {
-            if (err) {
-                return res.status(err).json(err);
-            }
-            usersModel.getUserInfo(client, collection, email, next);
-        })
+        ({email}, next) => {
+            usersModel.connect((err, client, collection) => {
+                next(err, email, client, collection)
+            })
+        },
+        (email, client, collection, next) => usersModel.getUserInfo(client, collection, email, next)
     ], (err, userInfo) => res.status(err ? 500 : 200).json(err ? err : userInfo));
 };
 
 module.exports.likesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
     async.waterfall([
         (next) => usersModel.verifyToken(token, next),
-        ({email}, next) => usersModel.connect((err, client, collection) => {
-            if (err) {
-                return res.status(err).json(err);
-            }
-            usersModel.likesRecipe(client, collection, email, recipeId, next);
-        })
+        ({email}, next) => {
+            usersModel.connect((err, client, collection) => {
+                next(err, email, client, collection)            
+            })
+        },
+        (email, client, collection, next) => usersModel.likesRecipe(client, collection, email, recipeId, next)
     ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined));
 };
 
 module.exports.unlikesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
     async.waterfall([
         (next) => usersModel.verifyToken(token, next),
-        ({email}, next) => usersModel.connect((err, client, collection) => {
-            if (err) {
-                return res.status(err).json(err);
-            }
-            usersModel.unlikesRecipe(client, collection, email, recipeId, next);
-        })
+        ({email}, next) => {
+            usersModel.connect((err, client, collection) => {
+                next(err, email, client, collection)
+            })
+        },
+        (email, client, collection, next) => usersModel.unlikesRecipe(client, collection, email, recipeId, next)
     ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined));
 };

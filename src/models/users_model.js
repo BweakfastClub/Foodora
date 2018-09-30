@@ -12,14 +12,29 @@ const connect = (next) => {
 
 module.exports.connect = connect;
 
+const passClientConnection = (client, collection, obj, helperFunction, next) => {
+    helperFunction(obj, (err, res) => {
+        if (err) {
+            return next(err, null);
+        }
+        next(null, res, collection, client);
+    }, collection, client);
+};
+
 const selectAllUsers = (client, collection, next) => {
     collection.find({}).toArray((err, items) => {
         client.close(() => next(err, items));
     });
 };
 
-const deleteUser = (client, collection, email, callback) => {
-    collection.remove({email}, callback);
+const deleteUser = ({userInfo}, callback, collection, client) => {
+    collection.remove({"email": userInfo.email}, (err, result) => {
+        if (err) {
+            return callback(err, null);
+        }
+        client.close();
+        callback(result, {userInfo});
+    });
 };
 
 const registerUser = (client, collection, name, email, password, callback) => {
@@ -39,12 +54,36 @@ const storeUser = (client, collection, name, email, hashedPassword, callback) =>
     });
 };
 
-const fetchUserInfo = (client, collection, email, callback) => {
-    collection.findOne({email}, (err, result) => {
-        if (!result) {
-            return callback({message: "user does not exist"});
+const authorizeUser = (obj, next) => {
+    auth.authorizeLogin(obj.email, obj.password, obj.userInfo, (err, userInfo) => {
+        if (err) {
+            return next(err, null);
         }
-        callback(err, result);
+
+        const res = {userInfo};
+
+        next(null, res);
+    });
+};
+
+const getToken = (obj, next) => {
+    auth.issueToken(obj.userInfo, (err, token) => {
+        next(err, token);
+    });
+};
+
+const fetchUserInfo = ({email, password}, callback, collection) => {
+    collection.findOne({email}, (err, userInfo) => {
+        if (!userInfo) {
+            return callback({message: "username does not exist"});
+        }
+        const res = {
+            email,
+            password,
+            userInfo
+        };
+
+        callback(err, res);
     });
 };
 
@@ -52,7 +91,7 @@ const dropUserTable = (client, collection, next) => {
     collection.drop(() => client.close(next));
 };
 
-const createEmailUniqueIndex = (client, collection, next) => {
+const createEmailUniqueIndex = (__, collection, next) => {
     collection.createIndex({"email" : 1}, {unique : true}, next);
 };
 
@@ -78,20 +117,30 @@ module.exports.registerUser = (name, email, password, callback) => {
 };
 
 module.exports.deleteUser = (email, password, callback) => {
+    const obj = {
+        email,
+        password
+    };
+
     async.waterfall([
         connect,
-        (client, collection, next) => fetchUserInfo(client, collection, email, next),
-        (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
-        (userInfo, next) => deleteUser(userInfo, next)
+        (client, collection, next) => passClientConnection(client, collection, obj, fetchUserInfo, next),
+        (userInfo, client, collection, next) => passClientConnection(client, collection, userInfo, authorizeUser, next),
+        (userInfo, client, collection, next) => passClientConnection(client, collection, userInfo, deleteUser, next)
     ], callback);
 };
 
 module.exports.login = (email, password, callback) => {
+    const obj = {
+        email,
+        password
+    };
+
     async.waterfall([
         connect,
-        (client, collection, next) => fetchUserInfo(client, collection, email, next),
-        (userInfo, next) => auth.authorizeLogin(email, password, userInfo, next),
-        (userInfo, next) => auth.issueToken(userInfo, next)
+        (client, collection, next) => passClientConnection(client, collection, obj, fetchUserInfo, next),
+        (userInfo, client, collection, next) => passClientConnection(client, collection, userInfo, authorizeUser, next),
+        (userInfo, client, collection, next) => passClientConnection(client, collection, userInfo, getToken, next)
     ], callback);
 };
 
