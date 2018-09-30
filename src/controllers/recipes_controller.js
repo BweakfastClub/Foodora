@@ -74,10 +74,32 @@ module.exports.planMeals = ({body: {recipeIds = null}}, res) => {
     const recipeIdQueries = recipeIds.map(recipeId => (callback) => recipesModel.selectRecipeById(recipeId, callback))
 
     async.parallel(recipeIdQueries, (err, results) => {
-        let totalCalories = 0
-        results.forEach(({nutrition: {calories: {amount=0}}}) => {
-            totalCalories+= amount 
-        })
-        res.status(200).json(totalCalories)
+        const nutritions = {
+            calories: {amount: 0, unit: null},
+            fat: {amount: 0, unit: null},
+            cholesterol: {amount: 0, unit: null},
+            carbohydrates: {amount: 0, unit: null},
+            protein: {amount: 0, unit: null},
+            sugars: {amount: 0, unit: null},
+        }; 
+
+        results.forEach(({nutrition: {calories, fat, cholesterol, carbohydrates, protein, sugars}}) => {
+            if (nutritions.calories.unit == null){
+                nutritions.calories.unit = calories.unit
+                nutritions.fat.unit = fat.unit
+                nutritions.cholesterol.unit = cholesterol.unit
+                nutritions.carbohydrates.unit = carbohydrates.unit
+                nutritions.protein.unit = protein.unit
+                nutritions.sugars.unit = sugars.unit
+            }
+
+            nutritions.calories.amount += calories.amount
+            nutritions.fat.amount += fat.amount
+            nutritions.cholesterol.amount += cholesterol.amount
+            nutritions.carbohydrates.amount += carbohydrates.amount
+            nutritions.protein.amount += protein.amount
+            nutritions.sugars.amount += sugars.amount
+        });
+        res.status(200).json(nutritions);
     })
 }
