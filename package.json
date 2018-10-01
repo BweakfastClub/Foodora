@@ -4,9 +4,10 @@
   "description": "foodora gives you the top recipes",
   "main": "index.js",
   "scripts": {
-    "test": "nyc ./node_modules/mocha/bin/mocha --recursive --exit",
     "lint": "eslint **/*.js",
-    "lint-fix": "eslint --fix **/*.js"
+    "lint-fix": "eslint --fix **/*.js",
+    "test": "nyc --reporter=html --reporter=text ./node_modules/mocha/bin/mocha --recursive --exit",
+    "coverage": "nyc report coveralls"
   },
   "author": "",
   "license": "ISC",

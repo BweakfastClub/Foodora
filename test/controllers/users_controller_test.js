@@ -337,7 +337,7 @@ describe('Endpoints exists for users', () => {
         });
     });
 
-    it('add a allergy successfully', (done) => {
+    it('add an allergy successfully', (done) => {
       chai.request(usersRoutes)
         .post('/users/allergy')
         .set('content-type', 'application/json')
@@ -360,7 +360,7 @@ describe('Endpoints exists for users', () => {
         });
     });
 
-    it('unlikes a recipe successfully', (done) => {
+    it('removes an allergy successfully', (done) => {
       chai.request(usersRoutes)
         .post('/users/allergy')
         .set('content-type', 'application/json')
