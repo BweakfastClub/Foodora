@@ -242,7 +242,7 @@ describe("Endpoints exists for users", () => {
         });
     });
 
-    describe("likes recipes tests", () => {
+    describe("liked recipes tests", () => {
 
         let userToken = null;
 
@@ -312,6 +312,83 @@ describe("Endpoints exists for users", () => {
                                     userInfoRes.should.have.status(200);
                                     should.exist(userInfoRes.body.likedRecipes);
                                     expect(userInfoRes.body.likedRecipes).to.not.contain("2345");
+                                    done();
+                                });
+                        });
+                });
+        });
+    });
+
+    describe("user allergy tests", () => {
+
+        let userToken = null;
+
+        before((done) => {
+            chai.request(usersRoutes).
+                post("/users/login").
+                set("content-type", "application/json").
+                send({
+                    email: "user@email.com",
+                    password: "1234"
+                }).
+                end((loginErr, loginRes) => {
+                    should.not.exist(loginErr);
+                    loginRes.should.have.status(200);
+                    should.exist(loginRes.body.token);
+                    userToken = loginRes.body.token;
+                    done();
+                });
+        });
+
+        it("add a allergy successfully", (done) => {
+            chai.request(usersRoutes).
+                post("/users/allergy").
+                set("content-type", "application/json").
+                set("token", userToken).
+                send({allergy: "peanuts"}).
+                end((allergyErr, allergyRes) => {
+                    should.not.exist(allergyErr);
+                    allergyRes.should.have.status(200);
+                    chai.request(usersRoutes).
+                        get("/users/user_info").
+                        set("content-type", "application/json").
+                        set("token", userToken).
+                        end((userInfoErr, userInfoRes) => {
+                            should.not.exist(userInfoErr);
+                            userInfoRes.should.have.status(200);
+                            should.exist(userInfoRes.body.foodAllergies);
+                            expect(userInfoRes.body.foodAllergies).to.contain("peanuts");
+                            done();
+                        });
+                });
+        });
+
+        it("unlikes a recipe successfully", (done) => {
+            chai.request(usersRoutes).
+                post("/users/allergy").
+                set("content-type", "application/json").
+                set("token", userToken).
+                send({allergy: "shrimp"}).
+                end((addAllergyErr, addAllergyRes) => {
+                    should.not.exist(addAllergyErr);
+                    addAllergyRes.should.have.status(200);
+                    chai.request(usersRoutes).
+                        delete("/users/allergy").
+                        set("content-type", "application/json").
+                        set("token", userToken).
+                        send({allergy: "shrimp"}).
+                        end((deleteAllergyErr, deleteAllergyRes) => {
+                            should.not.exist(deleteAllergyErr);
+                            deleteAllergyRes.should.have.status(200);
+                            chai.request(usersRoutes).
+                                get("/users/user_info").
+                                set("content-type", "application/json").
+                                set("token", userToken).
+                                end((userInfoErr, userInfoRes) => {
+                                    should.not.exist(userInfoErr);
+                                    userInfoRes.should.have.status(200);
+                                    should.exist(userInfoRes.body.foodAllergies);
+                                    expect(userInfoRes.body.foodAllergies).to.not.contain("shrimp");
                                     done();
                                 });
                         });
