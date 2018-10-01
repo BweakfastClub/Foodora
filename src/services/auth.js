@@ -1,40 +1,41 @@
-const bcrypt = require("bcrypt");
+const bcrypt = require('bcrypt');
+
 const saltRounds = 10;
-const jwt = require("jsonwebtoken");
-const {jwtSecret} = require("./config");
+const jwt = require('jsonwebtoken');
+const { jwtSecret } = require('./config');
 
 module.exports.hashPassword = (password, next) => {
-    bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
-        if (err) {
-            return next(err);
-        }
+  bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
+    if (err) {
+      return next(err);
+    }
 
-        next(null, hashedPassword);
-    });
+    return next(null, hashedPassword);
+  });
 };
 
 module.exports.authorizeLogin = (email, password, userInfo, next) => {
-    bcrypt.compare(password, userInfo.hashedPassword, (err, res) => {
-        if (err) {
-            return next(err);
-        }
-        if (!res) {
-            return next({message: "password is wrong"});
-        }
+  bcrypt.compare(password, userInfo.hashedPassword, (err, res) => {
+    if (err) {
+      return next(err);
+    }
+    if (!res) {
+      return next({ message: 'password is wrong' });
+    }
 
-        next(null, userInfo);
-    });
+    return next(null, userInfo);
+  });
 };
 
-module.exports.issueToken = ({name, email}, next) => {
-    const token = jwt.sign({
-        email,
-        name
-    }, jwtSecret);
+module.exports.issueToken = ({ name, email }, next) => {
+  const token = jwt.sign({
+    email,
+    name,
+  }, jwtSecret);
 
-    next(null, token);
+  next(null, token);
 };
 
 module.exports.verifyToken = (token, next) => {
-    jwt.verify(token, jwtSecret, next);
+  jwt.verify(token, jwtSecret, next);
 };
