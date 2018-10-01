@@ -82,3 +82,27 @@ module.exports.unlikesRecipe = ({body: {recipeId}, headers: {token}}, res) => {
         (email, client, collection, next) => usersModel.unlikesRecipe(client, collection, email, recipeId, next)
     ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined));
 };
+
+module.exports.addAllergy = ({body: {allergy}, headers: {token}}, res) => {
+    async.waterfall([
+        (next) => usersModel.verifyToken(token, next),
+        ({email}, next) => {
+            usersModel.connect((err, client, collection) => {
+                next(err, email, client, collection)
+            })
+        },
+        (email, client, collection, next) => usersModel.addAllergy(client, collection, email, allergy, next)
+    ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined))
+};
+
+module.exports.removeAllergy = ({body: {allergy}, headers: {token}}, res) => {
+    async.waterfall([
+        (next) => usersModel.verifyToken(token, next),
+        ({email}, next) => {
+            usersModel.connect((err, client, collection) => {
+                next(err, email, client, collection)
+            })
+        },
+        (email, client, collection, next) => usersModel.removeAllergy(client, collection, email, allergy, next)
+    ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined))
+}
