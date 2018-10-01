@@ -29,6 +29,28 @@ describe("Endpoints exists for recipes", () => {
     });
 
     describe("/POST search/filter recipes", () => {
+        it("should return a list of recipes with a keyword and caloric filter", (done) => {
+            chai.request(recipeRoutes).
+                post("/recipes/search").
+                set("content-type", "application/json").
+                send({
+                    "query": {
+                        "nutrition.calories.amount": {
+                            "$lt": 500
+                        }
+                    }
+                }).
+                end((err, res) => {
+                    should.not.exist(err);
+                    res.should.have.status(200);
+                    res.body.should.be.a("array");
+                    for (const recipe of res.body) {
+                        expect(recipe.nutrition.calories.amount).to.be.below(500);
+                    }
+                    done();
+                });
+        });
+
         it("should return a list of recipes with a keyword search", (done) => {
             chai.request(recipeRoutes).
                 post("/recipes/search").
@@ -48,15 +70,12 @@ describe("Endpoints exists for recipes", () => {
                 });
         });
 
-        it("should return a list of recipes with a keyword and caloric filter", (done) => {
+        it("should return a list of recipes with caloric filter", (done) => {
             chai.request(recipeRoutes).
                 post("/recipes/search").
                 set("content-type", "application/json").
                 send({
                     "query": {
-                        "$text": {
-                            "$search": "pork"
-                        }, 
                         "nutrition.calories.amount": {
                             "$lt": 500
                         }
@@ -66,8 +85,8 @@ describe("Endpoints exists for recipes", () => {
                     should.not.exist(err);
                     res.should.have.status(200);
                     res.body.should.be.a("array");
-                    for (let recipe of res.body) {
-                        expect(recipe.nutrition.calories.amount).to.be.below(500)
+                    for (const recipe of res.body) {
+                        expect(recipe.nutrition.calories.amount).to.be.below(500);
                     }
                     done();
                 });
