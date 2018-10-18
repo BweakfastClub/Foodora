@@ -168,6 +168,14 @@ module.exports.removeAllergy = (client, collection, email, allergy, callback) =>
     collection.findOneAndUpdate({email}, {$pull: {foodAllergies: allergy}}, () => client.close(callback));
 };
 
+module.exports.addRecipesToMealPlan = (client, collection, email, recipeIds, callback) => {
+    collection.findOneAndUpdate({email}, {$push: {mealPlan: {$each: recipeIds}}}, () => client.close(callback));
+};
+
+module.exports.removeRecipesToMealPlan = (client, collection, email, recipeIds, callback) => {
+    collection.findOneAndUpdate({email}, {$pull: {mealPlan:{$in: recipeIds}}}, () => client.close(callback));
+};
+
 module.exports.setup = (callback) => {
     console.log("setting up recipes");
     async.waterfall([

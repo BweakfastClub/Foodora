@@ -105,4 +105,28 @@ module.exports.removeAllergy = ({body: {allergy}, headers: {token}}, res) => {
         },
         (email, client, collection, next) => usersModel.removeAllergy(client, collection, email, allergy, next)
     ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined))
-}
+};
+
+module.exports.addRecipesToMealPlan = ({body: {recipeIds}, headers: {token}}, res) => {
+    async.waterfall([
+        (next) => usersModel.verifyToken(token, next),
+        ({email}, next) => {
+            usersModel.connect((err, client, collection) => {
+                next(err, email, client, collection)
+            })
+        },
+        (email, client, collection, next) => usersModel.addRecipesToMealPlan(client, collection, email, recipeIds, next)
+    ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined))
+};
+
+module.exports.removeRecipesToMealPlan = ({body: {recipeIds}, headers: {token}}, res) => {
+    async.waterfall([
+        (next) => usersModel.verifyToken(token, next),
+        ({email}, next) => {
+            usersModel.connect((err, client, collection) => {
+                next(err, email, client, collection)
+            })
+        },
+        (email, client, collection, next) => usersModel.removeRecipesToMealPlan(client, collection, email, recipeIds, next)
+    ], (err) => res.status(err ? 500 : 200).json(err ? err : undefined))
+};
