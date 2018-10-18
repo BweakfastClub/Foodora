@@ -1,8 +1,8 @@
 const bcrypt = require('bcrypt');
-
-const saltRounds = 10;
 const jwt = require('jsonwebtoken');
 const { jwtSecret } = require('./config');
+
+const saltRounds = 10;
 
 module.exports.hashPassword = (password, next) => {
   bcrypt.hash(password, saltRounds, (err, hashedPassword) => {

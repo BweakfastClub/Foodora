@@ -80,9 +80,11 @@ module.exports.recommendRecipe = ({ params: { recipeId = null } }, res) => {
     return res.status(400).json('Please enter the recipe Id');
   }
 
-  const pythonProcess = spawn('python', ['recommender.py',
+  const pythonProcess = spawn('python', [
+    'recommender.py',
     PYTHON_MODES.RECOMMEND,
-    recipeId]);
+    recipeId,
+  ]);
 
   let dataString = '';
 

@@ -99,7 +99,8 @@ module.exports.clean = (callback) => {
 
 module.exports.findAllUsers = (callback) => {
   async.waterfall([
-    connect, selectAllUsers,
+    connect,
+    selectAllUsers,
   ], callback);
 };
 
