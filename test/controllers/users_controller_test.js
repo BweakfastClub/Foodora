@@ -1,8 +1,8 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const async = require('async');
 const usersRoutes = require('../../index');
 const usersModel = require('../../src/models/users_model');
-
 
 const should = chai.should();
 const { expect } = chai;
@@ -237,6 +237,101 @@ describe('Endpoints exists for users', () => {
           should.exist(delRes);
           delRes.should.have.status(200);
           done();
+        });
+    });
+  });
+
+  describe('Change user info', () => {
+    let userToken = null;
+    before((done) => {
+      chai.request(usersRoutes)
+        .post('/users')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'userToBeChanged@email.com',
+          name: 'userToBeChanged',
+          password: 'passwordToBeChanged',
+        })
+        .end((err, res) => {
+          should.not.exist(err);
+          res.should.have.status(200);
+          chai.request(usersRoutes)
+            .post('/users/login')
+            .set('content-type', 'application/json')
+            .send({
+              email: 'userToBeChanged@email.com',
+              password: 'passwordToBeChanged',
+            })
+            .end((loginErr, loginRes) => {
+              should.not.exist(loginErr);
+              loginRes.should.have.status(200);
+              should.exist(loginRes.body.token);
+              userToken = loginRes.body.token;
+              done();
+            });
+        });
+    });
+
+    it('changes the user name successfully', (done) => {
+      chai.request(usersRoutes)
+        .put('/users/user_info')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({ name: 'New User Name' })
+        .end((changeNameErr, changeNameRes) => {
+          should.not.exist(changeNameErr);
+          changeNameRes.should.have.status(200);
+          chai.request(usersRoutes)
+            .get('/users/user_info')
+            .set('content-type', 'application/json')
+            .set('token', userToken)
+            .end((userInfoErr, userInfoRes) => {
+              should.not.exist(userInfoErr);
+              userInfoRes.should.have.status(200);
+              expect(userInfoRes.body.name).to.equal('New User Name');
+              done();
+            });
+        });
+    });
+    it('changes the user password successfully', (done) => {
+      chai.request(usersRoutes)
+        .put('/users/user_info')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({ password: 'New Password' })
+        .end((changePasswordErr, changePasswordRes) => {
+          should.not.exist(changePasswordErr);
+          changePasswordRes.should.have.status(200);
+          async.parallel({
+            loginWithNewPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'New Password',
+                })
+                .end(callback);
+            }),
+            loginWithOldPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'passwordToBeChanged',
+                })
+                .end(callback);
+            }),
+          }, (err, { loginWithNewPassword, loginWithOldPassword }) => {
+            should.not.exist(loginWithNewPassword.error);
+            loginWithNewPassword.value.should.have.status(200);
+            should.exist(loginWithNewPassword.value.body.token);
+
+            should.exist(loginWithOldPassword.error);
+            loginWithOldPassword.error.should.have.status(401);
+            done();
+          });
         });
     });
   });
