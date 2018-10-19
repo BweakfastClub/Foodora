@@ -63,7 +63,7 @@ module.exports.getUserInfo = ({ headers: { token } }, res) => {
   ], (err, userInfo) => res.status(err ? 500 : 200).json(err || userInfo));
 };
 
-module.exports.likesRecipe = ({ body: { recipeId }, headers: { token } }, res) => {
+module.exports.likesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -72,12 +72,12 @@ module.exports.likesRecipe = ({ body: { recipeId }, headers: { token } }, res) =
       });
     },
     (email, client, collection, next) => {
-      usersModel.likesRecipe(client, collection, email, recipeId, next);
+      usersModel.likesRecipes(client, collection, email, recipeIds, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.unlikesRecipe = ({ body: { recipeId }, headers: { token } }, res) => {
+module.exports.unlikesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -86,12 +86,12 @@ module.exports.unlikesRecipe = ({ body: { recipeId }, headers: { token } }, res)
       });
     },
     (email, client, collection, next) => {
-      usersModel.unlikesRecipe(client, collection, email, recipeId, next);
+      usersModel.unlikesRecipes(client, collection, email, recipeIds, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.addAllergy = ({ body: { allergy }, headers: { token } }, res) => {
+module.exports.addAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -100,12 +100,12 @@ module.exports.addAllergy = ({ body: { allergy }, headers: { token } }, res) => 
       });
     },
     (email, client, collection, next) => {
-      usersModel.addAllergy(client, collection, email, allergy, next);
+      usersModel.addAllergies(client, collection, email, allergies, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.removeAllergy = ({ body: { allergy }, headers: { token } }, res) => {
+module.exports.removeAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -114,7 +114,7 @@ module.exports.removeAllergy = ({ body: { allergy }, headers: { token } }, res) 
       });
     },
     (email, client, collection, next) => {
-      usersModel.removeAllergy(client, collection, email, allergy, next);
+      usersModel.removeAllergies(client, collection, email, allergies, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };

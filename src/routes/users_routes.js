@@ -13,9 +13,10 @@ app.delete('/', usersController.deleteUser);
 app.post('/login', usersController.login);
 app.get('/user_info', usersController.getUserInfo);
 
-app.post('/likes_recipe', usersController.likesRecipe);
-app.post('/unlikes_recipe', usersController.unlikesRecipe);
-app.post('/allergy', usersController.addAllergy);
-app.delete('/allergy', usersController.removeAllergy);
+app.post('/liked_recipes', usersController.likesRecipes);
+app.delete('/liked_recipes', usersController.unlikesRecipes);
+app.post('/allergies', usersController.addAllergies);
+app.delete('/allergies', usersController.removeAllergies);
+
 
 module.exports = app;
