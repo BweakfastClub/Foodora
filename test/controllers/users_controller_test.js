@@ -9,7 +9,7 @@ const { expect } = chai;
 
 chai.use(chaiHttp);
 
-describe('Endpoints exists for users', () => {
+describe('Endpoint tests', () => {
   before((done) => {
     usersModel.setup(() => chai.request(usersRoutes)
       .post('/users')
@@ -386,6 +386,83 @@ describe('Endpoints exists for users', () => {
                   userInfoRes.should.have.status(200);
                   should.exist(userInfoRes.body.foodAllergies);
                   expect(userInfoRes.body.foodAllergies).to.not.contain('shrimp');
+                  done();
+                });
+            });
+        });
+    });
+  });
+
+  describe('meal plan tests', () => {
+    let userToken = null;
+
+    before((done) => {
+      chai.request(usersRoutes)
+        .post('/users/login')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'user@email.com',
+          password: '1234',
+        })
+        .end((loginErr, loginRes) => {
+          should.not.exist(loginErr);
+          loginRes.should.have.status(200);
+          should.exist(loginRes.body.token);
+          userToken = loginRes.body.token;
+          done();
+        });
+    });
+
+    it('add a recipe to the meal plan successfully', (done) => {
+      chai.request(usersRoutes)
+        .post('/users/meal_plan')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({ recipeIds: ['12345', '23456', '34567'] })
+        .end((mealPlanErr, mealPlanRes) => {
+          should.not.exist(mealPlanErr);
+          mealPlanRes.should.have.status(200);
+          chai.request(usersRoutes)
+            .get('/users/user_info')
+            .set('content-type', 'application/json')
+            .set('token', userToken)
+            .end((userInfoErr, userInfoRes) => {
+              should.not.exist(userInfoErr);
+              userInfoRes.should.have.status(200);
+              should.exist(userInfoRes.body.mealPlan);
+              expect(userInfoRes.body.mealPlan).to.include.members(['12345', '23456', '34567']);
+              done();
+            });
+        });
+    });
+
+    it('removes a recipe from the meal plan successfully', (done) => {
+      chai.request(usersRoutes)
+        .post('/users/meal_plan')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({ recipeIds: ['99999_to_be_deleted', '77777_to_be_deleted', '333333'] })
+        .end((addRecipeToMealPlanErr, addRecipeToMealPlanRes) => {
+          should.not.exist(addRecipeToMealPlanErr);
+          addRecipeToMealPlanRes.should.have.status(200);
+          chai.request(usersRoutes)
+            .delete('/users/meal_plan')
+            .set('content-type', 'application/json')
+            .set('token', userToken)
+            .send({ recipeIds: ['99999_to_be_deleted', '77777_to_be_deleted', '222222_will_not_throw'] })
+            .end((removeRecipeFromMealPlanErr, removeRecipeFromMealPlanRes) => {
+              should.not.exist(removeRecipeFromMealPlanErr);
+              removeRecipeFromMealPlanRes.should.have.status(200);
+              chai.request(usersRoutes)
+                .get('/users/user_info')
+                .set('content-type', 'application/json')
+                .set('token', userToken)
+                .end((userInfoErr, userInfoRes) => {
+                  should.not.exist(userInfoErr);
+                  userInfoRes.should.have.status(200);
+                  should.exist(userInfoRes.body.mealPlan);
+                  expect(userInfoRes.body.mealPlan).to.include.members(['333333']);
+                  expect(userInfoRes.body.mealPlan).to.not.have.members(['99999_to_be_deleted', '77777_to_be_deleted']);
                   done();
                 });
             });
