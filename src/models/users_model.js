@@ -164,6 +164,28 @@ module.exports.getUserInfo = (client, collection, email, callback) => {
   );
 };
 
+module.exports.changeUserInfo = (client, collection, email, password, name, callback) => {
+  if (password) {
+    async.waterfall([
+      next => auth.hashPassword(password, next),
+      (hashedPassword, next) => {
+        collection.findOneAndUpdate(
+          { email },
+          { $set: { name, hashedPassword } },
+          next,
+        );
+      },
+    ], (err, result) => client.close(() => callback(err, result)));
+  } else {
+    collection.findOneAndUpdate(
+      { email },
+      { $set: { name } },
+      (err, result) => client.close(() => callback(err, result)),
+    );
+  }
+};
+
+
 module.exports.likesRecipe = (client, collection, email, recipeId, callback) => {
   collection.findOneAndUpdate(
     { email },

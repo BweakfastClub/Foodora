@@ -63,6 +63,26 @@ module.exports.getUserInfo = ({ headers: { token } }, res) => {
   ], (err, userInfo) => res.status(err ? 500 : 200).json(err || userInfo));
 };
 
+module.exports.changeUserInfo = (
+  {
+    body: { name = null, password = null },
+    headers: { token },
+  },
+  res,
+) => {
+  async.waterfall([
+    next => usersModel.verifyToken(token, next),
+    ({ email }, next) => {
+      usersModel.connect((err, client, collection) => {
+        next(err, email, client, collection);
+      });
+    },
+    (email, client, collection, next) => {
+      usersModel.changeUserInfo(client, collection, email, password, name, next);
+    },
+  ], err => res.status(err ? 500 : 200).json(err || undefined));
+};
+
 module.exports.likesRecipe = ({ body: { recipeId }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
