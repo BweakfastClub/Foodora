@@ -196,12 +196,17 @@ module.exports.removeAllergy = (client, collection, email, allergy, callback) =>
   );
 };
 
-module.exports.addRecipesToMealPlan = (client, collection, email, recipeIds, callback) => {
-  collection.findOneAndUpdate(
-    { email },
-    { $push: { mealPlan: { $each: recipeIds } } },
-    () => client.close(callback),
-  );
+module.exports.addRecipesToMealPlan = (email, recipeIds, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, next) => {
+      collection.findOneAndUpdate(
+        { email },
+        { $push: { mealPlan: { $each: recipeIds } } },
+        () => client.close(next),
+      );
+    },
+  ], callback);
 };
 
 module.exports.removeRecipesToMealPlan = (client, collection, email, recipeIds, callback) => {

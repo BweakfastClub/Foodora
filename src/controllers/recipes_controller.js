@@ -11,8 +11,12 @@ module.exports.setUp = () => {
   recipesModel.setup();
 };
 
-module.exports.findAllRecipes = (req, res) => {
-  recipesModel.allRecipes((err, result) => {
+module.exports.selectRecipesByIds = (req, res) => {
+  let { ids } = req.query;
+  ids = ids ? ids.split(',') : [];
+  ids = ids.map(id => parseInt(id, 10));
+
+  recipesModel.selectRecipesByIds(ids, (err, result) => {
     res.status(err ? 500 : 200).json(err ? undefined : result);
   });
 };
