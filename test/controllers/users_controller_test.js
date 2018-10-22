@@ -266,10 +266,10 @@ describe('Endpoint tests', () => {
 
     it('likes a recipe successfully', (done) => {
       chai.request(usersRoutes)
-        .post('/users/likes_recipe')
+        .post('/users/liked_recipes')
         .set('content-type', 'application/json')
         .set('token', userToken)
-        .send({ recipeId: '1234' })
+        .send({ recipeIds: ['1234', '2345', '3456'] })
         .end((likeErr, likeRes) => {
           should.not.exist(likeErr);
           likeRes.should.have.status(200);
@@ -281,7 +281,7 @@ describe('Endpoint tests', () => {
               should.not.exist(userInfoErr);
               userInfoRes.should.have.status(200);
               should.exist(userInfoRes.body.likedRecipes);
-              expect(userInfoRes.body.likedRecipes[0]).to.equal('1234');
+              expect(userInfoRes.body.likedRecipes).to.include.members(['1234', '2345', '3456']);
               done();
             });
         });
@@ -289,18 +289,18 @@ describe('Endpoint tests', () => {
 
     it('unlikes a recipe successfully', (done) => {
       chai.request(usersRoutes)
-        .post('/users/likes_recipe')
+        .post('/users/liked_recipes')
         .set('content-type', 'application/json')
         .set('token', userToken)
-        .send({ recipeId: '2345' })
+        .send({ recipeIds: ['1234_to_be_deleted', '2345_to_be_deleted', '6666'] })
         .end((likeErr, likeRes) => {
           should.not.exist(likeErr);
           likeRes.should.have.status(200);
           chai.request(usersRoutes)
-            .post('/users/unlikes_recipe')
+            .delete('/users/liked_recipes')
             .set('content-type', 'application/json')
             .set('token', userToken)
-            .send({ recipeId: '2345' })
+            .send({ recipeIds: ['1234_to_be_deleted', '2345_to_be_deleted', 'will_not_throw_error'] })
             .end((unlikeRecipeErr, unlikeRecipeRes) => {
               should.not.exist(unlikeRecipeErr);
               unlikeRecipeRes.should.have.status(200);
@@ -312,7 +312,8 @@ describe('Endpoint tests', () => {
                   should.not.exist(userInfoErr);
                   userInfoRes.should.have.status(200);
                   should.exist(userInfoRes.body.likedRecipes);
-                  expect(userInfoRes.body.likedRecipes).to.not.contain('2345');
+                  expect(userInfoRes.body.likedRecipes).to.contain('6666');
+                  expect(userInfoRes.body.likedRecipes).to.not.have.members(['1234_to_be_deleted', '2345_to_be_deleted']);
                   done();
                 });
             });
@@ -342,10 +343,10 @@ describe('Endpoint tests', () => {
 
     it('add an allergy successfully', (done) => {
       chai.request(usersRoutes)
-        .post('/users/allergy')
+        .post('/users/allergies')
         .set('content-type', 'application/json')
         .set('token', userToken)
-        .send({ allergy: 'peanuts' })
+        .send({ allergies: ['peanuts', 'beef'] })
         .end((allergyErr, allergyRes) => {
           should.not.exist(allergyErr);
           allergyRes.should.have.status(200);
@@ -357,7 +358,7 @@ describe('Endpoint tests', () => {
               should.not.exist(userInfoErr);
               userInfoRes.should.have.status(200);
               should.exist(userInfoRes.body.foodAllergies);
-              expect(userInfoRes.body.foodAllergies).to.contain('peanuts');
+              expect(userInfoRes.body.foodAllergies).to.include.members(['peanuts', 'beef']);
               done();
             });
         });
@@ -365,21 +366,21 @@ describe('Endpoint tests', () => {
 
     it('removes an allergy successfully', (done) => {
       chai.request(usersRoutes)
-        .post('/users/allergy')
+        .post('/users/allergies')
         .set('content-type', 'application/json')
         .set('token', userToken)
-        .send({ allergy: 'shrimp' })
-        .end((addAllergyErr, addAllergyRes) => {
-          should.not.exist(addAllergyErr);
-          addAllergyRes.should.have.status(200);
+        .send({ allergies: ['shrimp', 'milk'] })
+        .end((addAllergiesErr, addAllergiesRes) => {
+          should.not.exist(addAllergiesErr);
+          addAllergiesRes.should.have.status(200);
           chai.request(usersRoutes)
-            .delete('/users/allergy')
+            .delete('/users/allergies')
             .set('content-type', 'application/json')
             .set('token', userToken)
-            .send({ allergy: 'shrimp' })
-            .end((deleteAllergyErr, deleteAllergyRes) => {
-              should.not.exist(deleteAllergyErr);
-              deleteAllergyRes.should.have.status(200);
+            .send({ allergies: ['milk', 'coconut'] })
+            .end((deleteAllergiesErr, deleteAllergiesRes) => {
+              should.not.exist(deleteAllergiesErr);
+              deleteAllergiesRes.should.have.status(200);
               chai.request(usersRoutes)
                 .get('/users/user_info')
                 .set('content-type', 'application/json')
@@ -388,7 +389,8 @@ describe('Endpoint tests', () => {
                   should.not.exist(userInfoErr);
                   userInfoRes.should.have.status(200);
                   should.exist(userInfoRes.body.foodAllergies);
-                  expect(userInfoRes.body.foodAllergies).to.not.contain('shrimp');
+                  expect(userInfoRes.body.foodAllergies).to.not.contain('milk');
+                  expect(userInfoRes.body.foodAllergies).to.contain('shrimp');
                   done();
                 });
             });
