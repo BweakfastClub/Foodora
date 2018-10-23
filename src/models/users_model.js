@@ -185,35 +185,55 @@ module.exports.changeUserInfo = (client, collection, email, password, name, call
   }
 };
 
-
-module.exports.likesRecipe = (client, collection, email, recipeId, callback) => {
+module.exports.likesRecipes = (client, collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $push: { likedRecipes: recipeId } },
+    { $push: { likedRecipes: { $each: recipeIds } } },
     () => client.close(callback),
   );
 };
 
-module.exports.unlikesRecipe = (client, collection, email, recipeId, callback) => {
+module.exports.unlikesRecipes = (client, collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $pull: { likedRecipes: recipeId } },
+    { $pull: { likedRecipes: { $in: recipeIds } } },
     () => client.close(callback),
   );
 };
 
-module.exports.addAllergy = (client, collection, email, allergy, callback) => {
+module.exports.addAllergies = (client, collection, email, allergies, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $push: { foodAllergies: allergy } },
+    { $push: { foodAllergies: { $each: allergies } } },
     () => client.close(callback),
   );
 };
 
-module.exports.removeAllergy = (client, collection, email, allergy, callback) => {
+module.exports.removeAllergies = (client, collection, email, allergies, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $pull: { foodAllergies: allergy } },
+    { $pull: { foodAllergies: { $in: allergies } } },
+    () => client.close(callback),
+  );
+};
+
+module.exports.addRecipesToMealPlan = (email, recipeIds, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, next) => {
+      collection.findOneAndUpdate(
+        { email },
+        { $push: { mealPlan: { $each: recipeIds } } },
+        () => client.close(next),
+      );
+    },
+  ], callback);
+};
+
+module.exports.removeRecipesToMealPlan = (client, collection, email, recipeIds, callback) => {
+  collection.findOneAndUpdate(
+    { email },
+    { $pull: { mealPlan: { $in: recipeIds } } },
     () => client.close(callback),
   );
 };

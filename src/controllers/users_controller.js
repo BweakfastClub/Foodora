@@ -1,5 +1,6 @@
 const async = require('async');
 const usersModel = require('../models/users_model');
+const recipeModel = require('../models/recipes_model');
 
 module.exports.setUp = () => {
   usersModel.setup();
@@ -83,7 +84,7 @@ module.exports.changeUserInfo = (
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.likesRecipe = ({ body: { recipeId }, headers: { token } }, res) => {
+module.exports.likesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -92,12 +93,12 @@ module.exports.likesRecipe = ({ body: { recipeId }, headers: { token } }, res) =
       });
     },
     (email, client, collection, next) => {
-      usersModel.likesRecipe(client, collection, email, recipeId, next);
+      usersModel.likesRecipes(client, collection, email, recipeIds, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.unlikesRecipe = ({ body: { recipeId }, headers: { token } }, res) => {
+module.exports.unlikesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -106,12 +107,12 @@ module.exports.unlikesRecipe = ({ body: { recipeId }, headers: { token } }, res)
       });
     },
     (email, client, collection, next) => {
-      usersModel.unlikesRecipe(client, collection, email, recipeId, next);
+      usersModel.unlikesRecipes(client, collection, email, recipeIds, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.addAllergy = ({ body: { allergy }, headers: { token } }, res) => {
+module.exports.addAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -120,12 +121,12 @@ module.exports.addAllergy = ({ body: { allergy }, headers: { token } }, res) => 
       });
     },
     (email, client, collection, next) => {
-      usersModel.addAllergy(client, collection, email, allergy, next);
+      usersModel.addAllergies(client, collection, email, allergies, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.removeAllergy = ({ body: { allergy }, headers: { token } }, res) => {
+module.exports.removeAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
     ({ email }, next) => {
@@ -134,7 +135,37 @@ module.exports.removeAllergy = ({ body: { allergy }, headers: { token } }, res) 
       });
     },
     (email, client, collection, next) => {
-      usersModel.removeAllergy(client, collection, email, allergy, next);
+      usersModel.removeAllergies(client, collection, email, allergies, next);
+    },
+  ], err => res.status(err ? 500 : 200).json(err || undefined));
+};
+
+module.exports.addRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
+  usersModel.verifyToken(token, (tokenErr, decodedToken) => {
+    if (tokenErr) {
+      return res.status(401).json('Incorrect Token');
+    }
+
+    const { email } = decodedToken;
+    return async.waterfall([
+      next => recipeModel.filterRecipeIds(recipeIds, next),
+      (validRecipeIds, next) => {
+        usersModel.addRecipesToMealPlan(email, validRecipeIds, next);
+      },
+    ], err => res.status(err ? 500 : 200).json(err || undefined));
+  });
+};
+
+module.exports.removeRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
+  async.waterfall([
+    next => usersModel.verifyToken(token, next),
+    ({ email }, next) => {
+      usersModel.connect((err, client, collection) => {
+        next(err, email, client, collection);
+      });
+    },
+    (email, client, collection, next) => {
+      usersModel.removeRecipesToMealPlan(client, collection, email, recipeIds, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
