@@ -1,5 +1,6 @@
 const async = require('async');
 const usersModel = require('../models/users_model');
+const recipeModel = require('../models/recipes_model');
 
 module.exports.setUp = () => {
   usersModel.setup();
@@ -115,6 +116,36 @@ module.exports.removeAllergies = ({ body: { allergies }, headers: { token } }, r
     },
     (email, client, collection, next) => {
       usersModel.removeAllergies(client, collection, email, allergies, next);
+    },
+  ], err => res.status(err ? 500 : 200).json(err || undefined));
+};
+
+module.exports.addRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
+  usersModel.verifyToken(token, (tokenErr, decodedToken) => {
+    if (tokenErr) {
+      return res.status(401).json('Incorrect Token');
+    }
+
+    const { email } = decodedToken;
+    return async.waterfall([
+      next => recipeModel.filterRecipeIds(recipeIds, next),
+      (validRecipeIds, next) => {
+        usersModel.addRecipesToMealPlan(email, validRecipeIds, next);
+      },
+    ], err => res.status(err ? 500 : 200).json(err || undefined));
+  });
+};
+
+module.exports.removeRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
+  async.waterfall([
+    next => usersModel.verifyToken(token, next),
+    ({ email }, next) => {
+      usersModel.connect((err, client, collection) => {
+        next(err, email, client, collection);
+      });
+    },
+    (email, client, collection, next) => {
+      usersModel.removeRecipesToMealPlan(client, collection, email, recipeIds, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };

@@ -6,7 +6,7 @@ if (env !== 'testing') {
   recipesController.setUp();
 }
 
-app.get('/', recipesController.findAllRecipes);
+app.get('/', recipesController.selectRecipesByIds);
 app.post('/search', recipesController.searchRecipes);
 app.get('/id/:recipeId', recipesController.selectRecipeById);
 app.get('/recommend/:recipeId', recipesController.recommendRecipe);

@@ -17,6 +17,8 @@ app.post('/liked_recipes', usersController.likesRecipes);
 app.delete('/liked_recipes', usersController.unlikesRecipes);
 app.post('/allergies', usersController.addAllergies);
 app.delete('/allergies', usersController.removeAllergies);
+app.post('/meal_plan', usersController.addRecipesToMealPlan);
+app.delete('/meal_plan', usersController.removeRecipesToMealPlan);
 
 
 module.exports = app;
