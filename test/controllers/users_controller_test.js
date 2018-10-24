@@ -280,7 +280,10 @@ describe('Endpoint tests', () => {
         .put('/users/user_info')
         .set('content-type', 'application/json')
         .set('token', userToken)
-        .send({ name: 'New User Name' })
+        .send({ 
+          name: 'New User Name',
+          password: 'passwordToBeChanged',
+        })
         .end((changeNameErr, changeNameRes) => {
           should.not.exist(changeNameErr);
           changeNameRes.should.have.status(200);
@@ -301,7 +304,10 @@ describe('Endpoint tests', () => {
         .put('/users/user_info')
         .set('content-type', 'application/json')
         .set('token', userToken)
-        .send({ password: 'New Password' })
+        .send({
+           password: 'passwordToBeChanged',
+           newPassword: 'New Password' 
+          })
         .end((changePasswordErr, changePasswordRes) => {
           should.not.exist(changePasswordErr);
           changePasswordRes.should.have.status(200);

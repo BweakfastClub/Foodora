@@ -50,20 +50,24 @@ const registerUser = (client, collection, name, email, password, callback) => {
   ], callback);
 };
 
-const authorizeUser = (obj, next) => {
-  auth.authorizeLogin(obj.email, obj.password, obj.userInfo, (err, userInfo) => {
-    if (err) {
-      return next(err, null);
-    }
+module.exports.authorizeUser = ({ email, password }, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, outerNext) => async.waterfall([
+      next => fetchUserInfo({ email, password }, next, collection),
+      (userInfo, next) => authorizeLogin(userInfo, next)
+    ], err => client.close(() => outerNext(err)))
+  ], err => callback(err))
+}
 
-    const res = { userInfo };
-
-    return next(null, res);
+const authorizeLogin = ({email, password, userInfo}, next) => {
+  auth.authorizeLogin(email, password, userInfo, (err, userInfo) => {
+    return next(err, err ? null : { userInfo });
   });
 };
 
-const getToken = (obj, next) => {
-  auth.issueToken(obj.userInfo, (err, token) => {
+const getToken = ({ userInfo }, next) => {
+  auth.issueToken(userInfo, (err, token) => {
     next(err, token);
   });
 };
@@ -93,7 +97,8 @@ const createEmailUniqueIndex = (__, collection, next) => {
 
 module.exports.clean = (callback) => {
   async.waterfall([
-    connect, dropUserTable,
+    connect, 
+    dropUserTable,
   ], callback);
 };
 
@@ -106,7 +111,8 @@ module.exports.findAllUsers = (callback) => {
 
 module.exports.registerUser = (name, email, password, callback) => {
   async.waterfall([
-    connect, (client, collection, next) => {
+    connect, 
+    (client, collection, next) => {
       registerUser(client, collection, name, email, password, next);
     },
   ], callback);
@@ -124,7 +130,7 @@ module.exports.deleteUser = (email, password, callback) => {
       passClientConnection(client, collection, obj, fetchUserInfo, next);
     },
     (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, authorizeUser, next);
+      passClientConnection(client, collection, userInfo, authorizeLogin, next);
     },
     (userInfo, client, collection, next) => {
       passClientConnection(client, collection, userInfo, deleteUser, next);
@@ -144,7 +150,7 @@ module.exports.login = (email, password, callback) => {
       passClientConnection(client, collection, obj, fetchUserInfo, next);
     },
     (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, authorizeUser, next);
+      passClientConnection(client, collection, userInfo, authorizeLogin, next);
     },
     (userInfo, client, collection, next) => {
       passClientConnection(client, collection, userInfo, getToken, next);
@@ -164,7 +170,7 @@ module.exports.getUserInfo = (client, collection, email, callback) => {
   );
 };
 
-module.exports.changeUserInfo = (client, collection, email, password, name, callback) => {
+const changeUserInfo = (client, collection, email, password, name, callback) => {
   if (password) {
     async.waterfall([
       next => auth.hashPassword(password, next),
@@ -175,15 +181,26 @@ module.exports.changeUserInfo = (client, collection, email, password, name, call
           next,
         );
       },
-    ], (err, result) => client.close(() => callback(err, result)));
+    ], callback);
   } else {
     collection.findOneAndUpdate(
       { email },
       { $set: { name } },
-      (err, result) => client.close(() => callback(err, result)),
+      callback,
     );
   }
 };
+
+module.exports.changeUserInfo = (email, password, name, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, next) => {
+      changeUserInfo(client, collection, email, password, name, next);
+    },
+  ], (err, res) => {
+    callback(err, res)
+  })
+}
 
 module.exports.likesRecipes = (client, collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
@@ -241,7 +258,8 @@ module.exports.removeRecipesToMealPlan = (client, collection, email, recipeIds, 
 module.exports.setup = (callback) => {
   console.log('setting up recipes');
   async.waterfall([
-    connect, createEmailUniqueIndex,
+    connect, 
+    createEmailUniqueIndex,
   ],
   callback);
 };
