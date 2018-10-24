@@ -5,7 +5,6 @@ const { env, url } = require('../../config');
 
 const connect = (next) => {
   mongoClient.connect(url, (err, client) => {
-    console.log('Connected successfully to server');
     next(err, client, client.db(env).collection('recipes'));
   });
 };
@@ -24,7 +23,6 @@ const selectRecipeById = (client, collection, id, next) => {
 
 const selectRecipesByIds = (client, collection, ids, next) => {
   collection.find({ id: { $in: ids } }).toArray((err, item) => {
-    console.log({ item });
     client.close(() => next(err, item));
   });
 };
@@ -91,7 +89,6 @@ module.exports.search = (query, callback) => {
 
 /* eslint-disable sort-keys */
 module.exports.setup = (callback) => {
-  console.log('setting up recipes');
   async.waterfall([
     connect,
     function tempInsert(client, collection, next) {

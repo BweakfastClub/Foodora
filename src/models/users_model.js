@@ -5,7 +5,6 @@ const auth = require('../services/auth');
 
 const connect = (next) => {
   mongoClient.connect(url, (err, client) => {
-    console.log('Connected successfully to server');
     next(err, client, client.db(env).collection('users'));
   });
 };
@@ -50,20 +49,13 @@ const registerUser = (client, collection, name, email, password, callback) => {
   ], callback);
 };
 
-module.exports.authorizeUser = ({ email, password }, callback) => {
-  async.waterfall([
-    connect,
-    (client, collection, outerNext) => async.waterfall([
-      next => fetchUserInfo({ email, password }, next, collection),
-      (userInfo, next) => authorizeLogin(userInfo, next)
-    ], err => client.close(() => outerNext(err)))
-  ], err => callback(err))
-}
-
-const authorizeLogin = ({email, password, userInfo}, next) => {
-  auth.authorizeLogin(email, password, userInfo, (err, userInfo) => {
-    return next(err, err ? null : { userInfo });
-  });
+const authorizeLogin = ({ email, password, userInfo }, next) => {
+  auth.authorizeLogin(
+    email,
+    password,
+    userInfo,
+    (err, loggedInUserInfo) => next(err, err ? null : { userInfo: loggedInUserInfo }),
+  );
 };
 
 const getToken = ({ userInfo }, next) => {
@@ -87,6 +79,16 @@ const fetchUserInfo = ({ email, password }, callback, collection) => {
   });
 };
 
+module.exports.authorizeUser = ({ email, password }, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, outerNext) => async.waterfall([
+      next => fetchUserInfo({ email, password }, next, collection),
+      (userInfo, next) => authorizeLogin(userInfo, next),
+    ], err => client.close(() => outerNext(err))),
+  ], err => callback(err));
+};
+
 const dropUserTable = (client, collection, next) => {
   collection.drop(() => client.close(next));
 };
@@ -97,7 +99,7 @@ const createEmailUniqueIndex = (__, collection, next) => {
 
 module.exports.clean = (callback) => {
   async.waterfall([
-    connect, 
+    connect,
     dropUserTable,
   ], callback);
 };
@@ -111,7 +113,7 @@ module.exports.findAllUsers = (callback) => {
 
 module.exports.registerUser = (name, email, password, callback) => {
   async.waterfall([
-    connect, 
+    connect,
     (client, collection, next) => {
       registerUser(client, collection, name, email, password, next);
     },
@@ -170,25 +172,28 @@ module.exports.getUserInfo = (client, collection, email, callback) => {
   );
 };
 
-const changeUserInfo = (client, collection, email, password, name, callback) => {
-  if (password) {
-    async.waterfall([
-      next => auth.hashPassword(password, next),
-      (hashedPassword, next) => {
-        collection.findOneAndUpdate(
-          { email },
-          { $set: { name, hashedPassword } },
-          next,
-        );
-      },
-    ], callback);
-  } else {
+const changeUserInfo = async (client, collection, email, password, name, callback) => {
+  if (!name && !password) {
+    callback({
+      error: 'Please provide password or name to be changed.',
+    }, null);
+  }
+
+  let changeContent = {};
+  if (name) {
+    changeContent = { ...changeContent, name };
+  }
+
+  auth.hashPassword(password, (err, hashedPassword) => {
+    if (hashedPassword) {
+      changeContent = { ...changeContent, hashedPassword };
+    }
     collection.findOneAndUpdate(
       { email },
-      { $set: { name } },
+      { $set: changeContent },
       callback,
     );
-  }
+  });
 };
 
 module.exports.changeUserInfo = (email, password, name, callback) => {
@@ -198,9 +203,9 @@ module.exports.changeUserInfo = (email, password, name, callback) => {
       changeUserInfo(client, collection, email, password, name, next);
     },
   ], (err, res) => {
-    callback(err, res)
-  })
-}
+    callback(err, res);
+  });
+};
 
 module.exports.likesRecipes = (client, collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
@@ -256,9 +261,8 @@ module.exports.removeRecipesToMealPlan = (client, collection, email, recipeIds, 
 };
 
 module.exports.setup = (callback) => {
-  console.log('setting up recipes');
   async.waterfall([
-    connect, 
+    connect,
     createEmailUniqueIndex,
   ],
   callback);

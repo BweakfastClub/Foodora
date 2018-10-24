@@ -5,13 +5,11 @@ const { jwtSecret } = require('./config');
 const saltRounds = 10;
 
 module.exports.hashPassword = (password, next) => {
-  bcrypt.hash(password, saltRounds, (err, hashedPassword) => {
-    if (err) {
-      return next(err);
-    }
-
-    return next(null, hashedPassword);
-  });
+  bcrypt.hash(
+    password,
+    saltRounds,
+    next,
+  );
 };
 
 module.exports.authorizeLogin = (email, password, userInfo, next) => {

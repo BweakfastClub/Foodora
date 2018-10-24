@@ -23,9 +23,6 @@ module.exports.selectRecipesByIds = (req, res) => {
 
 module.exports.searchRecipes = ({ body: { query = null } }, res) => {
   recipesModel.search(query, (err, result) => {
-    if (err) {
-      console.log(err);
-    }
     res.status(err ? 500 : 200).json(err ? undefined : result);
   });
 };
