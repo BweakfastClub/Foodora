@@ -76,6 +76,11 @@ module.exports.changeUserInfo = (
       error: 'Password must be provided.',
     });
   }
+  if (!name && !newPassword) {
+    return res.status(400).json({
+      error: 'New password or new name must be provided.',
+    });
+  }
   return async.waterfall([
     outerNext => usersModel.verifyToken(token, outerNext),
     ({ email }, outerNext) => async.waterfall([
