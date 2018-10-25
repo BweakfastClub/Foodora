@@ -12,52 +12,32 @@ chai.use(chaiHttp);
 
 describe('Endpoint tests', () => {
   before((done) => {
-    async.parallel({
-      recipeSetup: callback => recipesModel.setup(callback),
-      userSetup: callback => usersModel.setup(callback),
-      addUser1: callback => chai.request(usersRoutes)
-        .post('/users')
-        .set('content-type', 'application/json')
-        .send({
-          email: 'user@email.com',
-          name: 'user',
-          password: '1234',
-        })
-        .end(callback),
-      addUser2: callback => chai.request(usersRoutes)
-        .post('/users')
-        .set('content-type', 'application/json')
-        .send({
-          email: 'deleteUser@email.com',
-          name: 'deleteUser',
-          password: '1234',
-        })
-        .end(callback),
-    }, (err, results) => {
-      should.not.exist(err);
-      results.addUser1.should.have.status(200);
-      results.addUser2.should.have.status(200);
-      done();
-    });
-  });
-
-  after((done) => {
-    usersModel.clean(done);
-  });
-
-  describe('/GET users', () => {
-    it('the get users endpoint should exist', (done) => {
-      chai.request(usersRoutes)
-        .get('/users')
-        .end((err, res) => {
-          should.not.exist(err);
-          res.should.have.status(200);
-          done();
-        });
-    });
+    usersModel.setup(done);
   });
 
   describe('/POST users', () => {
+    before((done) => {
+      async.parallel({
+        addUser: callback => chai.request(usersRoutes)
+          .post('/users')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            name: 'user',
+            password: '1234',
+          })
+          .end(callback),
+      }, (err, results) => {
+        should.not.exist(err);
+        results.addUser.should.have.status(200);
+        done();
+      });
+    });
+
+    after((done) => {
+      usersModel.clean(done);
+    });
+
     it('Post user requires name', (done) => {
       chai.request(usersRoutes)
         .post('/users')
@@ -137,6 +117,28 @@ describe('Endpoint tests', () => {
   });
 
   describe('login tests', () => {
+    before((done) => {
+      async.parallel({
+        addUser: callback => chai.request(usersRoutes)
+          .post('/users')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            name: 'user',
+            password: '1234',
+          })
+          .end(callback),
+      }, (err, results) => {
+        should.not.exist(err);
+        results.addUser.should.have.status(200);
+        done();
+      });
+    });
+
+    after((done) => {
+      usersModel.clean(done);
+    });
+
     it('logs in succesfully after user registration and issues a token', (done) => {
       chai.request(usersRoutes)
         .post('/users')
@@ -198,7 +200,30 @@ describe('Endpoint tests', () => {
     });
   });
 
-  describe('/Delete users', () => {
+  describe('/DELETE users', () => {
+    before((done) => {
+      async.parallel({
+        userSetup: callback => usersModel.setup(callback),
+        addUser: callback => chai.request(usersRoutes)
+          .post('/users')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'deleteUser@email.com',
+            name: 'deleteUser',
+            password: '1234',
+          })
+          .end(callback),
+      }, (err, results) => {
+        should.not.exist(err);
+        results.addUser.should.have.status(200);
+        done();
+      });
+    });
+
+    after((done) => {
+      usersModel.clean(done);
+    });
+
     it('Delete user require password', (done) => {
       chai.request(usersRoutes)
         .del('/users')
@@ -244,24 +269,242 @@ describe('Endpoint tests', () => {
     });
   });
 
+  describe('Change user info', () => {
+    let userToken = null;
+    beforeEach((done) => {
+      chai.request(usersRoutes)
+        .post('/users')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'userToBeChanged@email.com',
+          name: 'userToBeChanged',
+          password: 'passwordToBeChanged',
+        })
+        .end((err, res) => {
+          should.not.exist(err);
+          res.should.have.status(200);
+          chai.request(usersRoutes)
+            .post('/users/login')
+            .set('content-type', 'application/json')
+            .send({
+              email: 'userToBeChanged@email.com',
+              password: 'passwordToBeChanged',
+            })
+            .end((loginErr, loginRes) => {
+              should.not.exist(loginErr);
+              loginRes.should.have.status(200);
+              should.exist(loginRes.body.token);
+              userToken = loginRes.body.token;
+              done();
+            });
+        });
+    });
+
+    afterEach((done) => {
+      usersModel.clean(done);
+    });
+
+    it('changing user info must include correct password', (done) => {
+      chai.request(usersRoutes)
+        .put('/users/user_info')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({
+          name: 'New User Name',
+        })
+        .end((changeNameErr, changeNameRes) => {
+          should.exist(changeNameErr);
+          changeNameRes.should.have.status(401);
+          chai.request(usersRoutes)
+            .get('/users/user_info')
+            .set('content-type', 'application/json')
+            .set('token', userToken)
+            .end((userInfoErr, userInfoRes) => {
+              should.not.exist(userInfoErr);
+              userInfoRes.should.have.status(200);
+              expect(userInfoRes.body.name).to.not.equal('New User Name');
+              expect(userInfoRes.body.name).to.equal('userToBeChanged');
+              done();
+            });
+        });
+    });
+
+    it('changes the user name successfully', (done) => {
+      chai.request(usersRoutes)
+        .put('/users/user_info')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({
+          name: 'New User Name',
+          password: 'passwordToBeChanged',
+        })
+        .end((changeNameErr, changeNameRes) => {
+          should.not.exist(changeNameErr);
+          changeNameRes.should.have.status(200);
+          chai.request(usersRoutes)
+            .get('/users/user_info')
+            .set('content-type', 'application/json')
+            .set('token', userToken)
+            .end((userInfoErr, userInfoRes) => {
+              should.not.exist(userInfoErr);
+              userInfoRes.should.have.status(200);
+              expect(userInfoRes.body.name).to.equal('New User Name');
+              done();
+            });
+        });
+    });
+
+    it('changes the user password successfully', (done) => {
+      chai.request(usersRoutes)
+        .put('/users/user_info')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({
+          password: 'passwordToBeChanged',
+          newPassword: 'New Password',
+        })
+        .end((changePasswordErr, changePasswordRes) => {
+          should.not.exist(changePasswordErr);
+          changePasswordRes.should.have.status(200);
+          async.parallel({
+            loginWithNewPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'New Password',
+                })
+                .end(callback);
+            }),
+            loginWithOldPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'passwordToBeChanged',
+                })
+                .end(callback);
+            }),
+            getUserInfo: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .get('/users/user_info')
+                .set('content-type', 'application/json')
+                .set('token', userToken)
+                .end(callback);
+            }),
+          }, (err, { loginWithNewPassword, loginWithOldPassword, getUserInfo }) => {
+            should.not.exist(loginWithNewPassword.error);
+            loginWithNewPassword.value.should.have.status(200);
+            should.exist(loginWithNewPassword.value.body.token);
+
+            should.exist(loginWithOldPassword.error);
+            loginWithOldPassword.error.should.have.status(401);
+
+            should.not.exist(getUserInfo.error);
+            expect(getUserInfo.value.body.name).to.equal('userToBeChanged');
+            done();
+          });
+        });
+    });
+
+    it('changes the user password and name successfully', (done) => {
+      chai.request(usersRoutes)
+        .put('/users/user_info')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({
+          password: 'passwordToBeChanged',
+          newPassword: 'New Password',
+          name: 'New Username',
+        })
+        .end((changePasswordErr, changePasswordRes) => {
+          should.not.exist(changePasswordErr);
+          changePasswordRes.should.have.status(200);
+          async.parallel({
+            loginWithNewPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'New Password',
+                })
+                .end(callback);
+            }),
+            loginWithOldPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'passwordToBeChanged',
+                })
+                .end(callback);
+            }),
+            getUserInfo: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .get('/users/user_info')
+                .set('content-type', 'application/json')
+                .set('token', userToken)
+                .end(callback);
+            }),
+          }, (err, { loginWithNewPassword, loginWithOldPassword, getUserInfo }) => {
+            should.not.exist(loginWithNewPassword.error);
+            loginWithNewPassword.value.should.have.status(200);
+            should.exist(loginWithNewPassword.value.body.token);
+
+            should.exist(loginWithOldPassword.error);
+            loginWithOldPassword.error.should.have.status(401);
+
+            should.not.exist(getUserInfo.error);
+            getUserInfo.value.should.have.status(200);
+            expect(getUserInfo.value.body.name).to.equal('New Username');
+            done();
+          });
+        });
+    });
+  });
+
   describe('liked recipes tests', () => {
     let userToken = null;
 
     before((done) => {
-      chai.request(usersRoutes)
-        .post('/users/login')
-        .set('content-type', 'application/json')
-        .send({
-          email: 'user@email.com',
-          password: '1234',
-        })
-        .end((loginErr, loginRes) => {
-          should.not.exist(loginErr);
+      async.parallel({
+        recipeSetup: callback => recipesModel.setup(callback),
+        addUserAndLogin: callback => async.waterfall([
+          next => chai.request(usersRoutes)
+            .post('/users')
+            .set('content-type', 'application/json')
+            .send({
+              email: 'user@email.com',
+              name: 'user',
+              password: '1234',
+            })
+            .end(next),
+          (res, next) => chai.request(usersRoutes)
+            .post('/users/login')
+            .set('content-type', 'application/json')
+            .send({
+              email: 'user@email.com',
+              password: '1234',
+            })
+            .end(next),
+        ], (err, loginRes) => {
           loginRes.should.have.status(200);
           should.exist(loginRes.body.token);
           userToken = loginRes.body.token;
-          done();
-        });
+          callback(err);
+        }),
+      }, (err) => {
+        should.not.exist(err);
+        done();
+      });
+    });
+
+    after((done) => {
+      usersModel.clean(done);
     });
 
     it('likes a recipe successfully', (done) => {
@@ -325,20 +568,35 @@ describe('Endpoint tests', () => {
     let userToken = null;
 
     before((done) => {
-      chai.request(usersRoutes)
-        .post('/users/login')
-        .set('content-type', 'application/json')
-        .send({
-          email: 'user@email.com',
-          password: '1234',
-        })
-        .end((loginErr, loginRes) => {
-          should.not.exist(loginErr);
-          loginRes.should.have.status(200);
-          should.exist(loginRes.body.token);
-          userToken = loginRes.body.token;
-          done();
-        });
+      async.waterfall([
+        next => chai.request(usersRoutes)
+          .post('/users')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            name: 'user',
+            password: '1234',
+          })
+          .end(next),
+        (res, next) => chai.request(usersRoutes)
+          .post('/users/login')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            password: '1234',
+          })
+          .end(next),
+      ], (err, loginRes) => {
+        should.not.exist(err);
+        loginRes.should.have.status(200);
+        should.exist(loginRes.body.token);
+        userToken = loginRes.body.token;
+        done();
+      });
+    });
+
+    after((done) => {
+      usersModel.clean(done);
     });
 
     it('add an allergy successfully', (done) => {
@@ -402,20 +660,35 @@ describe('Endpoint tests', () => {
     let userToken = null;
 
     before((done) => {
-      chai.request(usersRoutes)
-        .post('/users/login')
-        .set('content-type', 'application/json')
-        .send({
-          email: 'user@email.com',
-          password: '1234',
-        })
-        .end((loginErr, loginRes) => {
-          should.not.exist(loginErr);
-          loginRes.should.have.status(200);
-          should.exist(loginRes.body.token);
-          userToken = loginRes.body.token;
-          done();
-        });
+      async.waterfall([
+        next => chai.request(usersRoutes)
+          .post('/users')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            name: 'user',
+            password: '1234',
+          })
+          .end(next),
+        (res, next) => chai.request(usersRoutes)
+          .post('/users/login')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            password: '1234',
+          })
+          .end(next),
+      ], (err, loginRes) => {
+        should.not.exist(err);
+        loginRes.should.have.status(200);
+        should.exist(loginRes.body.token);
+        userToken = loginRes.body.token;
+        done();
+      });
+    });
+
+    after((done) => {
+      usersModel.clean(done);
     });
 
     it('adds recipes to the meal plan successfully', (done) => {

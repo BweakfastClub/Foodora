@@ -5,7 +5,6 @@ const auth = require('../services/auth');
 
 const connect = (next) => {
   mongoClient.connect(url, (err, client) => {
-    console.log('Connected successfully to server');
     next(err, client, client.db(env).collection('users'));
   });
 };
@@ -50,20 +49,17 @@ const registerUser = (client, collection, name, email, password, callback) => {
   ], callback);
 };
 
-const authorizeUser = (obj, next) => {
-  auth.authorizeLogin(obj.email, obj.password, obj.userInfo, (err, userInfo) => {
-    if (err) {
-      return next(err, null);
-    }
-
-    const res = { userInfo };
-
-    return next(null, res);
-  });
+const authorizeLogin = ({ email, password, userInfo }, next) => {
+  auth.authorizeLogin(
+    email,
+    password,
+    userInfo,
+    (err, loggedInUserInfo) => next(err, err ? null : { userInfo: loggedInUserInfo }),
+  );
 };
 
-const getToken = (obj, next) => {
-  auth.issueToken(obj.userInfo, (err, token) => {
+const getToken = ({ userInfo }, next) => {
+  auth.issueToken(userInfo, (err, token) => {
     next(err, token);
   });
 };
@@ -83,6 +79,16 @@ const fetchUserInfo = ({ email, password }, callback, collection) => {
   });
 };
 
+module.exports.authorizeUser = ({ email, password }, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, outerNext) => async.waterfall([
+      next => fetchUserInfo({ email, password }, next, collection),
+      (userInfo, next) => authorizeLogin(userInfo, next),
+    ], err => client.close(() => outerNext(err))),
+  ], err => callback(err));
+};
+
 const dropUserTable = (client, collection, next) => {
   collection.drop(() => client.close(next));
 };
@@ -93,7 +99,8 @@ const createEmailUniqueIndex = (__, collection, next) => {
 
 module.exports.clean = (callback) => {
   async.waterfall([
-    connect, dropUserTable,
+    connect,
+    dropUserTable,
   ], callback);
 };
 
@@ -106,7 +113,8 @@ module.exports.findAllUsers = (callback) => {
 
 module.exports.registerUser = (name, email, password, callback) => {
   async.waterfall([
-    connect, (client, collection, next) => {
+    connect,
+    (client, collection, next) => {
       registerUser(client, collection, name, email, password, next);
     },
   ], callback);
@@ -124,7 +132,7 @@ module.exports.deleteUser = (email, password, callback) => {
       passClientConnection(client, collection, obj, fetchUserInfo, next);
     },
     (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, authorizeUser, next);
+      passClientConnection(client, collection, userInfo, authorizeLogin, next);
     },
     (userInfo, client, collection, next) => {
       passClientConnection(client, collection, userInfo, deleteUser, next);
@@ -144,7 +152,7 @@ module.exports.login = (email, password, callback) => {
       passClientConnection(client, collection, obj, fetchUserInfo, next);
     },
     (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, authorizeUser, next);
+      passClientConnection(client, collection, userInfo, authorizeLogin, next);
     },
     (userInfo, client, collection, next) => {
       passClientConnection(client, collection, userInfo, getToken, next);
@@ -162,6 +170,41 @@ module.exports.getUserInfo = (client, collection, email, callback) => {
     { projection: { hashedPassword: 0, _id: 0 } },
     (err, result) => client.close(() => callback(err, result)),
   );
+};
+
+const changeUserInfo = async (client, collection, email, password, name, callback) => {
+  if (!name && !password) {
+    callback({
+      error: 'Please provide password or name to be changed.',
+    }, null);
+  }
+
+  let changeContent = {};
+  if (name) {
+    changeContent = { ...changeContent, name };
+  }
+
+  auth.hashPassword(password, (err, hashedPassword) => {
+    if (hashedPassword) {
+      changeContent = { ...changeContent, hashedPassword };
+    }
+    collection.findOneAndUpdate(
+      { email },
+      { $set: changeContent },
+      callback,
+    );
+  });
+};
+
+module.exports.changeUserInfo = (email, password, name, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, next) => {
+      changeUserInfo(client, collection, email, password, name, next);
+    },
+  ], (err, res) => {
+    callback(err, res);
+  });
 };
 
 module.exports.likesRecipes = (client, collection, email, recipeIds, callback) => {
@@ -218,9 +261,9 @@ module.exports.removeRecipesToMealPlan = (client, collection, email, recipeIds, 
 };
 
 module.exports.setup = (callback) => {
-  console.log('setting up recipes');
   async.waterfall([
-    connect, createEmailUniqueIndex,
+    connect,
+    createEmailUniqueIndex,
   ],
   callback);
 };

@@ -11,7 +11,9 @@ app.post('/', usersController.register);
 app.delete('/', usersController.deleteUser);
 
 app.post('/login', usersController.login);
+
 app.get('/user_info', usersController.getUserInfo);
+app.put('/user_info', usersController.changeUserInfo);
 
 app.post('/liked_recipes', usersController.likesRecipes);
 app.delete('/liked_recipes', usersController.unlikesRecipes);

@@ -64,6 +64,29 @@ module.exports.getUserInfo = ({ headers: { token } }, res) => {
   ], (err, userInfo) => res.status(err ? 500 : 200).json(err || userInfo));
 };
 
+module.exports.changeUserInfo = (
+  {
+    body: { name = null, password = null, newPassword = null },
+    headers: { token },
+  },
+  res,
+) => {
+  if (!password) {
+    return res.status(401).json({
+      error: 'Password must be provided.',
+    });
+  }
+  return async.waterfall([
+    outerNext => usersModel.verifyToken(token, outerNext),
+    ({ email }, outerNext) => async.waterfall([
+      next => usersModel.authorizeUser({ email, password }, next),
+      next => usersModel.changeUserInfo(email, newPassword, name, next),
+    ], outerNext),
+  ], (err) => {
+    res.status(err ? 500 : 200).json(err || undefined);
+  });
+};
+
 module.exports.likesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
@@ -123,7 +146,9 @@ module.exports.removeAllergies = ({ body: { allergies }, headers: { token } }, r
 module.exports.addRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
   usersModel.verifyToken(token, (tokenErr, decodedToken) => {
     if (tokenErr) {
-      return res.status(401).json('Incorrect Token');
+      return res.status(401).json({
+        error: 'Incorrect Token',
+      });
     }
 
     const { email } = decodedToken;
