@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "./node_modules/.bin/eslint \"**/*.js\"",
     "lint-fix": "./node_modules/.bin/eslint --fix \"**/*.js\"",
-    "test": "nyc --reporter=html --reporter=text ./node_modules/mocha/bin/mocha --recursive --exit",
+    "test": "NODE_ENV=testing nyc --reporter=html --reporter=text ./node_modules/mocha/bin/mocha --recursive --exit",
     "coverage": "nyc report coveralls"
   },
   "author": "",
