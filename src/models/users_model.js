@@ -173,12 +173,6 @@ module.exports.getUserInfo = (client, collection, email, callback) => {
 };
 
 const changeUserInfo = async (client, collection, email, password, name, callback) => {
-  if (!name && !password) {
-    callback({
-      error: 'Please provide password or name to be changed.',
-    }, null);
-  }
-
   let changeContent = {};
   if (name) {
     changeContent = { ...changeContent, name };

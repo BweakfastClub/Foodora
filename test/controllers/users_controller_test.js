@@ -338,19 +338,37 @@ describe('Endpoint tests', () => {
           name: 'New User Name',
           password: 'passwordToBeChanged',
         })
-        .end((changeNameErr, changeNameRes) => {
-          should.not.exist(changeNameErr);
-          changeNameRes.should.have.status(200);
-          chai.request(usersRoutes)
-            .get('/users/user_info')
-            .set('content-type', 'application/json')
-            .set('token', userToken)
-            .end((userInfoErr, userInfoRes) => {
-              should.not.exist(userInfoErr);
-              userInfoRes.should.have.status(200);
-              expect(userInfoRes.body.name).to.equal('New User Name');
-              done();
-            });
+        .end((changeUserInfoErr, changeUserInfoRes) => {
+          should.not.exist(changeUserInfoErr);
+          changeUserInfoRes.should.have.status(200);
+          async.parallel({
+            loginWithOriginalPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'passwordToBeChanged',
+                })
+                .end(callback);
+            }),
+            getUserInfo: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .get('/users/user_info')
+                .set('content-type', 'application/json')
+                .set('token', userToken)
+                .end(callback);
+            }),
+          }, (err, { loginWithOriginalPassword, getUserInfo }) => {
+            should.not.exist(loginWithOriginalPassword.error);
+            loginWithOriginalPassword.value.should.have.status(200);
+            should.exist(loginWithOriginalPassword.value.body.token);
+
+            should.not.exist(getUserInfo.error);
+            getUserInfo.value.should.have.status(200);
+            expect(getUserInfo.value.body.name).to.equal('New User Name');
+            done();
+          });
         });
     });
 
@@ -363,9 +381,9 @@ describe('Endpoint tests', () => {
           password: 'passwordToBeChanged',
           newPassword: 'New Password',
         })
-        .end((changePasswordErr, changePasswordRes) => {
-          should.not.exist(changePasswordErr);
-          changePasswordRes.should.have.status(200);
+        .end((changeUserInfoErr, changeUserInfoRes) => {
+          should.not.exist(changeUserInfoErr);
+          changeUserInfoRes.should.have.status(200);
           async.parallel({
             loginWithNewPassword: async.reflect((callback) => {
               chai.request(usersRoutes)
@@ -403,6 +421,7 @@ describe('Endpoint tests', () => {
             loginWithOldPassword.error.should.have.status(401);
 
             should.not.exist(getUserInfo.error);
+            getUserInfo.value.should.have.status(200);
             expect(getUserInfo.value.body.name).to.equal('userToBeChanged');
             done();
           });
@@ -461,6 +480,48 @@ describe('Endpoint tests', () => {
             should.not.exist(getUserInfo.error);
             getUserInfo.value.should.have.status(200);
             expect(getUserInfo.value.body.name).to.equal('New Username');
+            done();
+          });
+        });
+    });
+
+    it('leaves the username and password unchanged if not inclued in request', (done) => {
+      chai.request(usersRoutes)
+        .put('/users/user_info')
+        .set('content-type', 'application/json')
+        .set('token', userToken)
+        .send({
+          password: 'passwordToBeChanged',
+        })
+        .end((changeUserInfoErr, changeUserInfoRes) => {
+          should.exist(changeUserInfoErr);
+          changeUserInfoRes.should.have.status(400);
+          async.parallel({
+            loginWithOriginalPassword: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .post('/users/login')
+                .set('content-type', 'application/json')
+                .send({
+                  email: 'userToBeChanged@email.com',
+                  password: 'passwordToBeChanged',
+                })
+                .end(callback);
+            }),
+            getUserInfo: async.reflect((callback) => {
+              chai.request(usersRoutes)
+                .get('/users/user_info')
+                .set('content-type', 'application/json')
+                .set('token', userToken)
+                .end(callback);
+            }),
+          }, (err, { loginWithOriginalPassword, getUserInfo }) => {
+            should.not.exist(loginWithOriginalPassword.error);
+            loginWithOriginalPassword.value.should.have.status(200);
+            should.exist(loginWithOriginalPassword.value.body.token);
+
+            should.not.exist(getUserInfo.error);
+            getUserInfo.value.should.have.status(200);
+            expect(getUserInfo.value.body.name).to.equal('userToBeChanged');
             done();
           });
         });
