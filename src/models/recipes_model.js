@@ -32,7 +32,7 @@ const filterRecipeIds = (client, collection, ids, next) => {
     { id: { $in: ids } },
     { projection: { id: 1, _id: 0 } },
   ).toArray(
-    (err, items) => client.close(() => next(err, items.map(item => item.id))),
+    (err, items) => client.close(() => next(err, [...new Set(items.map(item => item.id))])),
   );
 };
 
