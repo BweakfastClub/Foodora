@@ -6,6 +6,18 @@ module.exports.setUp = () => {
   usersModel.setup();
 };
 
+const verifyToken = (token, res, callback) => {
+  usersModel.verifyToken(token, (tokenErr, decodedToken) => {
+    if (tokenErr) {
+      return res.status(401).json({
+        error: 'Invalid or Missing Token, please include a valid token in the header',
+      });
+    }
+
+    return callback(null, decodedToken);
+  });
+};
+
 module.exports.findAllUsers = (req, res) => {
   usersModel.findAllUsers((err, users) => {
     res.status(err ? 500 : 200).json(err ? undefined : users);
@@ -55,12 +67,7 @@ module.exports.login = ({ body: { email = null, password = null } }, res) => {
 module.exports.getUserInfo = ({ headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => {
-      usersModel.connect((err, client, collection) => {
-        next(err, email, client, collection);
-      });
-    },
-    (email, client, collection, next) => usersModel.getUserInfo(client, collection, email, next),
+    ({ email }, next) => usersModel.getUserInfo(email, next),
   ], (err, userInfo) => res.status(err ? 500 : 200).json(err || userInfo));
 };
 
@@ -95,87 +102,48 @@ module.exports.changeUserInfo = (
 module.exports.likesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => {
-      usersModel.connect((err, client, collection) => {
-        next(err, email, client, collection);
-      });
-    },
-    (email, client, collection, next) => {
-      usersModel.likesRecipes(client, collection, email, recipeIds, next);
-    },
+    ({ email }, next) => usersModel.likesRecipes(email, recipeIds, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.unlikesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => {
-      usersModel.connect((err, client, collection) => {
-        next(err, email, client, collection);
-      });
-    },
-    (email, client, collection, next) => {
-      usersModel.unlikesRecipes(client, collection, email, recipeIds, next);
-    },
+    ({ email }, next) => usersModel.unlikesRecipes(email, recipeIds, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.addAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => {
-      usersModel.connect((err, client, collection) => {
-        next(err, email, client, collection);
-      });
-    },
-    (email, client, collection, next) => {
-      usersModel.addAllergies(client, collection, email, allergies, next);
-    },
+    ({ email }, next) => usersModel.addAllergies(email, allergies, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.removeAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => {
-      usersModel.connect((err, client, collection) => {
-        next(err, email, client, collection);
-      });
-    },
-    (email, client, collection, next) => {
-      usersModel.removeAllergies(client, collection, email, allergies, next);
-    },
+    ({ email }, next) => usersModel.removeAllergies(email, allergies, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.addRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
-  usersModel.verifyToken(token, (tokenErr, decodedToken) => {
-    if (tokenErr) {
-      return res.status(401).json({
-        error: 'Incorrect Token',
-      });
-    }
-
-    const { email } = decodedToken;
-    return async.waterfall([
-      next => recipeModel.filterRecipeIds(recipeIds, next),
-      (validRecipeIds, next) => {
-        usersModel.addRecipesToMealPlan(email, validRecipeIds, next);
+  async.auto({
+    verifyToken: callback => verifyToken(token, res, callback),
+    filterRecipeIds: callback => recipeModel.filterRecipeIds(recipeIds, callback),
+    addRecipes: [
+      'verifyToken',
+      'filterRecipeIds',
+      ({ filterRecipeIds, verifyToken: { email } }, callback) => {
+        usersModel.addRecipesToMealPlan(email, filterRecipeIds, callback);
       },
-    ], err => res.status(err ? 500 : 200).json(err || undefined));
-  });
+    ],
+  }, err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.removeRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => {
-      usersModel.connect((err, client, collection) => {
-        next(err, email, client, collection);
-      });
-    },
-    (email, client, collection, next) => {
-      usersModel.removeRecipesToMealPlan(client, collection, email, recipeIds, next);
-    },
+    ({ email }, next) => usersModel.removeRecipesToMealPlan(email, recipeIds, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
