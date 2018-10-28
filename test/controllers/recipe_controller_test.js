@@ -10,6 +10,10 @@ const { expect } = chai;
 chai.use(chaiHttp);
 
 describe('Endpoints exists for recipes', () => {
+  before((done) => {
+    recipeModel.setup(done);
+  });
+
   after((done) => {
     recipeModel.clean(done);
   });
