@@ -1,6 +1,7 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
 const recipesModel = require('../models/recipes_model');
+const usersModel = require('../models/users_model');
 
 const PYTHON_MODES = {
   PROCESS: 'PROCESS',
@@ -24,6 +25,30 @@ module.exports.selectRecipesByIds = (req, res) => {
 module.exports.searchRecipes = ({ body: { query = null } }, res) => {
   recipesModel.search(query, (err, result) => {
     res.status(err ? 500 : 200).json(err ? undefined : result);
+  });
+};
+
+module.exports.getTopRecipes = (req, res) => {
+  const numberOfRecipes = 8;
+  usersModel.countLikedRecipes((err, recipes) => {
+    if (!err && Object.keys(recipes).length >= numberOfRecipes) {
+      const keysSorted = Object.keys(recipes).sort(
+        (recipe1, recipe2) => recipes[recipe2] - recipes[recipe1],
+      );
+      let topRecipesIds = keysSorted.slice(0, numberOfRecipes);
+      topRecipesIds = topRecipesIds.map(recipeId => parseInt(recipeId, 10));
+      recipesModel.selectRecipesByIds(
+        topRecipesIds,
+        (selectRecipeErr, topRecipes) => {
+          res.status(selectRecipeErr ? 500 : 200).json(selectRecipeErr ? null : topRecipes);
+        },
+      );
+    } else {
+      recipesModel.getRandomRecipes(numberOfRecipes, (getRandomRecipesErr, randomRecipes) => {
+        res.status(getRandomRecipesErr ? 500 : 200)
+          .json(getRandomRecipesErr ? null : randomRecipes);
+      });
+    }
   });
 };
 

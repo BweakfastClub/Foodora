@@ -15,5 +15,8 @@
     "parserOptions": {
         "sourceType": "module",
         "ecmaVersion": 2018
+    },
+    "rules": {
+        "no-param-reassign": ["error", { "props": false }]
     }
 }
