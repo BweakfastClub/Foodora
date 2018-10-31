@@ -2,7 +2,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const recipeRoutes = require('../../index');
 const recipeModel = require('../../src/models/recipes_model');
-
+const recipeData = require('../../data/tests/recipes/recipes.json');
 
 const should = chai.should();
 const { expect } = chai;
@@ -11,7 +11,7 @@ chai.use(chaiHttp);
 
 describe('Endpoints exists for recipes', () => {
   before((done) => {
-    recipeModel.setup(done);
+    recipeModel.setup(recipeData, done);
   });
 
   after((done) => {

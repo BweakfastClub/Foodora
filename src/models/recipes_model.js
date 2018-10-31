@@ -2,7 +2,6 @@
 const async = require('async');
 const mongoClient = require('mongodb').MongoClient;
 const { env, url } = require('../../config');
-const data = require('../../data/recipes/recipes.json');
 
 const connect = (next) => {
   mongoClient.connect(url, (err, client) => {
@@ -99,7 +98,7 @@ const createUniqueIndex = (collection, callback) => {
   );
 };
 
-module.exports.setup = (callback) => {
+module.exports.setup = (data, callback) => {
   async.auto({
     connect: autoCallback => connect(autoCallback),
     createUniqueIndex: ['connect', (results, autoCallback) => {
