@@ -8,6 +8,7 @@ services:
   - mongodb
 script: 
   - npm run lint
-  - npm run test
+  - npm run integration-test
+  - npm run unit-test
 notifications:
   slack: bwekfastclub:apMLylCPCrM8rZTKlRkUOohL

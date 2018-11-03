@@ -1,10 +1,10 @@
 const chai = require('chai');
 const chaiHttp = require('chai-http');
 const async = require('async');
-const usersRoutes = require('../../index');
-const usersModel = require('../../src/models/users_model');
-const recipesModel = require('../../src/models/recipes_model');
-const recipesData = require('../../data/recipes/recipes.json');
+const recipesData = require('../../../data/recipes/recipes.json');
+const usersRoutes = require('../../../index');
+const usersModel = require('../../../src/models/users_model');
+const recipesModel = require('../../../src/models/recipes_model');
 
 const should = chai.should();
 const { expect } = chai;
