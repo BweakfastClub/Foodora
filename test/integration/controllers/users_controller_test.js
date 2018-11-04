@@ -98,6 +98,7 @@ describe('Endpoint tests', () => {
         .end((err, res) => {
           should.not.exist(err);
           res.should.have.status(200);
+          should.exist(res.body.token);
           done();
         });
     });

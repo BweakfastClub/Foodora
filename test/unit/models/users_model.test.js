@@ -26,7 +26,7 @@ describe('create new users', () => {
     const name = 'user';
     const password = '1234';
 
-    await storeUser(client, users, name, email, password, (err) => {
+    await storeUser(users, name, email, password, (err) => {
       expect(err).toBeNull();
     });
 

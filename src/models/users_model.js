@@ -57,20 +57,18 @@ const deleteUser = ({ userInfo }, callback, collection, client) => {
   });
 };
 
-const storeUser = (client, collection, name, email, hashedPassword, callback) => {
+const storeUser = (collection, name, email, hashedPassword, callback) => {
   collection.insertOne({
     email,
     hashedPassword,
     name,
-  }, (err, result) => {
-    client.close(() => callback(err, result));
-  });
+  }, callback);
 };
 
-const registerUser = (client, collection, name, email, password, callback) => {
+const registerUser = ({ name, email, password }, callback, collection) => {
   async.waterfall([
     next => auth.hashPassword(password, next),
-    (hashedPassword, next) => storeUser(client, collection, name, email, hashedPassword, next),
+    (hashedPassword, next) => storeUser(collection, name, email, hashedPassword, next),
   ], callback);
 };
 
@@ -140,7 +138,13 @@ module.exports.registerUser = (name, email, password, callback) => {
   async.waterfall([
     connect,
     (client, collection, next) => {
-      registerUser(client, collection, name, email, password, next);
+      passClientConnection(client, collection, { name, email, password }, registerUser, next);
+    },
+    (__, client, collection, next) => {
+      passClientConnection(client, collection, { userInfo: { name, email } }, getToken, next);
+    },
+    (token, client, __, next) => {
+      client.close(next(null, token));
     },
   ], callback);
 };

@@ -30,11 +30,11 @@ module.exports.register = ({ body: { name = null, email = null, password = null 
       error: 'Email, name and Password must be provided',
     });
   } else {
-    usersModel.registerUser(name, email, password, (err) => {
+    usersModel.registerUser(name, email, password, (err, token) => {
       if (err && err.code === 11000) {
         res.status(409).json({ error: `${email} is already used, please use another email.` });
       } else {
-        res.status(err ? 500 : 200).json();
+        res.status(err ? 500 : 200).json(err ? undefined : { token });
       }
     });
   }
