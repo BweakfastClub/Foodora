@@ -74,6 +74,21 @@ module.exports.search = (query, callback) => {
   ], callback);
 };
 
+const getRandomRecipes = (client, collection, numberOfRecipes, callback) => {
+  collection.aggregate([{ $sample: { size: numberOfRecipes } }])
+    .toArray((err, items) => {
+      callback(err, items);
+    });
+};
+
+module.exports.getRandomRecipes = (numberOfRecipes, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, next) => getRandomRecipes(client, collection, numberOfRecipes, next),
+  ], callback);
+};
+
+
 const dropRecipeTable = (client, collection, next) => {
   collection.drop(() => client.close(next));
 };
