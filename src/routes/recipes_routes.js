@@ -1,9 +1,10 @@
 const app = require('express').Router();
 const recipesController = require('../controllers/recipes_controller');
 const { env } = require('../../config');
+const data = require('../../data/recipes/recipes.json');
 
 if (env !== 'testing') {
-  recipesController.setUp();
+  recipesController.setUp(data);
 }
 
 app.get('/', recipesController.selectRecipesByIds);

@@ -4,6 +4,7 @@ const async = require('async');
 const usersRoutes = require('../../index');
 const usersModel = require('../../src/models/users_model');
 const recipesModel = require('../../src/models/recipes_model');
+const recipesData = require('../../data/recipes/recipes.json');
 
 const should = chai.should();
 const { expect } = chai;
@@ -12,7 +13,9 @@ chai.use(chaiHttp);
 
 describe('Endpoint tests', () => {
   before((done) => {
-    usersModel.setup(done);
+    usersModel.setup(
+      recipesModel.setup(recipesData, done),
+    );
   });
 
   describe('/POST users', () => {
@@ -532,34 +535,29 @@ describe('Endpoint tests', () => {
     let userToken = null;
 
     before((done) => {
-      async.parallel({
-        recipeSetup: callback => recipesModel.setup(callback),
-        addUserAndLogin: callback => async.waterfall([
-          next => chai.request(usersRoutes)
-            .post('/users')
-            .set('content-type', 'application/json')
-            .send({
-              email: 'user@email.com',
-              name: 'user',
-              password: '1234',
-            })
-            .end(next),
-          (res, next) => chai.request(usersRoutes)
-            .post('/users/login')
-            .set('content-type', 'application/json')
-            .send({
-              email: 'user@email.com',
-              password: '1234',
-            })
-            .end(next),
-        ], (err, loginRes) => {
-          loginRes.should.have.status(200);
-          should.exist(loginRes.body.token);
-          userToken = loginRes.body.token;
-          callback(err);
-        }),
-      }, (err) => {
+      async.waterfall([
+        next => chai.request(usersRoutes)
+          .post('/users')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            name: 'user',
+            password: '1234',
+          })
+          .end(next),
+        (res, next) => chai.request(usersRoutes)
+          .post('/users/login')
+          .set('content-type', 'application/json')
+          .send({
+            email: 'user@email.com',
+            password: '1234',
+          })
+          .end(next),
+      ], (err, loginRes) => {
         should.not.exist(err);
+        loginRes.should.have.status(200);
+        should.exist(loginRes.body.token);
+        userToken = loginRes.body.token;
         done();
       });
     });
@@ -569,59 +567,100 @@ describe('Endpoint tests', () => {
     });
 
     it('likes a recipe successfully', (done) => {
-      chai.request(usersRoutes)
-        .post('/users/liked_recipes')
-        .set('content-type', 'application/json')
-        .set('token', userToken)
-        .send({ recipeIds: ['1234', '2345', '3456'] })
-        .end((likeErr, likeRes) => {
-          should.not.exist(likeErr);
-          likeRes.should.have.status(200);
-          chai.request(usersRoutes)
-            .get('/users/user_info')
-            .set('content-type', 'application/json')
-            .set('token', userToken)
-            .end((userInfoErr, userInfoRes) => {
-              should.not.exist(userInfoErr);
-              userInfoRes.should.have.status(200);
-              should.exist(userInfoRes.body.likedRecipes);
-              expect(userInfoRes.body.likedRecipes).to.include.members(['1234', '2345', '3456']);
-              done();
-            });
-        });
+      async.auto({
+        likeRecipes: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [68461, 15184, 20669] })
+          .end(callback),
+        getUserInfo: ['likeRecipes', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { likeRecipes, getUserInfo }) => {
+        should.not.exist(err);
+        expect(likeRecipes.should.have.status(200));
+        expect(getUserInfo.should.have.status(200));
+        expect(getUserInfo.body.likedRecipes).to.have.members([68461, 15184, 20669]);
+        done();
+      });
+    });
+
+    it('ignores liking invalid recipeIds', (done) => {
+      async.auto({
+        likeRecipes: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [6666666666, 9999999999] })
+          .end(callback),
+        getUserInfo: ['likeRecipes', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { likeRecipes, getUserInfo }) => {
+        should.not.exist(err);
+        expect(likeRecipes.should.have.status(200));
+        expect(getUserInfo.should.have.status(200));
+        expect(getUserInfo.body.likedRecipes).to.not.have.members([6666666666, 9999999999]);
+        done();
+      });
+    });
+
+    it('ignores liking an invalid recipeId while adding a valid recipeId', (done) => {
+      async.auto({
+        likeRecipes: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [777777777, 88888888888, 13838] })
+          .end(callback),
+        getUserInfo: ['likeRecipes', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { likeRecipes, getUserInfo }) => {
+        should.not.exist(err);
+        expect(likeRecipes.should.have.status(200));
+        expect(getUserInfo.should.have.status(200));
+        expect(getUserInfo.body.likedRecipes).to.include(13838);
+        expect(getUserInfo.body.likedRecipes).to.not.have.members([777777777, 88888888888]);
+        done();
+      });
     });
 
     it('unlikes a recipe successfully', (done) => {
-      chai.request(usersRoutes)
-        .post('/users/liked_recipes')
-        .set('content-type', 'application/json')
-        .set('token', userToken)
-        .send({ recipeIds: ['1234_to_be_deleted', '2345_to_be_deleted', '6666'] })
-        .end((likeErr, likeRes) => {
-          should.not.exist(likeErr);
-          likeRes.should.have.status(200);
-          chai.request(usersRoutes)
-            .delete('/users/liked_recipes')
-            .set('content-type', 'application/json')
-            .set('token', userToken)
-            .send({ recipeIds: ['1234_to_be_deleted', '2345_to_be_deleted', 'will_not_throw_error'] })
-            .end((unlikeRecipeErr, unlikeRecipeRes) => {
-              should.not.exist(unlikeRecipeErr);
-              unlikeRecipeRes.should.have.status(200);
-              chai.request(usersRoutes)
-                .get('/users/user_info')
-                .set('content-type', 'application/json')
-                .set('token', userToken)
-                .end((userInfoErr, userInfoRes) => {
-                  should.not.exist(userInfoErr);
-                  userInfoRes.should.have.status(200);
-                  should.exist(userInfoRes.body.likedRecipes);
-                  expect(userInfoRes.body.likedRecipes).to.contain('6666');
-                  expect(userInfoRes.body.likedRecipes).to.not.have.members(['1234_to_be_deleted', '2345_to_be_deleted']);
-                  done();
-                });
-            });
-        });
+      async.auto({
+        likeRecipes: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [19673, 71722, 14830] })
+          .end(callback),
+        unlikeRecipes: ['likeRecipes', (results, callback) => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [71722, 14830] })
+          .end(callback)],
+        getUserInfo: ['unlikeRecipes', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { likeRecipes, unlikeRecipes, getUserInfo }) => {
+        should.not.exist(err);
+        expect(likeRecipes.should.have.status(200));
+        expect(unlikeRecipes.should.have.status(200));
+        expect(getUserInfo.should.have.status(200));
+        expect(getUserInfo.body.likedRecipes).to.include(19673);
+        expect(getUserInfo.body.likedRecipes).to.not.have.members([71722, 14830]);
+        done();
+      });
     });
   });
 

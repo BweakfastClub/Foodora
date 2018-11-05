@@ -8,8 +8,8 @@ const PYTHON_MODES = {
   RECOMMEND: 'RECOMMEND',
 };
 
-module.exports.setUp = () => {
-  recipesModel.setup();
+module.exports.setUp = (data, callback) => {
+  recipesModel.setup(data, callback);
 };
 
 module.exports.selectRecipesByIds = (req, res) => {

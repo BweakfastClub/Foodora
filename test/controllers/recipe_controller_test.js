@@ -4,6 +4,7 @@ const async = require('async');
 const routes = require('../../index');
 const recipeModel = require('../../src/models/recipes_model');
 const userModel = require('../../src/models/users_model');
+const recipeData = require('../../data/tests/recipes/recipes.json');
 
 const should = chai.should();
 const { expect } = chai;
@@ -13,7 +14,7 @@ chai.use(chaiHttp);
 describe('Endpoints exists for recipes', () => {
   before((done) => {
     userModel.setup(
-      recipeModel.setup(done),
+      recipeModel.setup(recipeData, done),
     );
   });
 

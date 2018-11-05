@@ -100,10 +100,17 @@ module.exports.changeUserInfo = (
 };
 
 module.exports.likesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
-  async.waterfall([
-    next => usersModel.verifyToken(token, next),
-    ({ email }, next) => usersModel.likesRecipes(email, recipeIds, next),
-  ], err => res.status(err ? 500 : 200).json(err || undefined));
+  async.auto({
+    verifyToken: callback => verifyToken(token, res, callback),
+    filterRecipeIds: callback => recipeModel.filterRecipeIds(recipeIds, callback),
+    addRecipes: [
+      'verifyToken',
+      'filterRecipeIds',
+      ({ filterRecipeIds, verifyToken: { email } }, callback) => {
+        usersModel.likesRecipes(email, filterRecipeIds, callback);
+      },
+    ],
+  }, err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.unlikesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
