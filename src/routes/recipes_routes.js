@@ -12,5 +12,6 @@ app.post('/search', recipesController.searchRecipes);
 app.get('/id/:recipeId', recipesController.selectRecipeById);
 app.get('/recommend/:recipeId', recipesController.recommendRecipe);
 app.get('/process_json', recipesController.processRecipesJson);
+app.get('/top_recipes', recipesController.getTopRecipes);
 
 module.exports = app;

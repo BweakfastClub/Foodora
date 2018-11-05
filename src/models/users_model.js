@@ -23,6 +23,31 @@ const selectAllUsers = (client, collection, next) => {
   });
 };
 
+const countLikedRecipes = (client, collection, callback) => {
+  selectAllUsers(client, collection, (err, users) => {
+    const likedRecipesCount = users.reduce(
+      (counter, { likedRecipes = [] }) => {
+        likedRecipes.forEach((recipeId) => {
+          if (!(recipeId in counter)) {
+            counter[recipeId] = 0;
+          }
+          counter[recipeId] += 1;
+        });
+        return counter;
+      },
+      {},
+    );
+    callback(err, likedRecipesCount);
+  });
+};
+
+module.exports.countLikedRecipes = (callback) => {
+  async.waterfall([
+    connect,
+    countLikedRecipes,
+  ], callback);
+};
+
 const deleteUser = ({ userInfo }, callback, collection, client) => {
   collection.remove({ email: userInfo.email }, (err, result) => {
     if (err) {
