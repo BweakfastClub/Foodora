@@ -134,23 +134,64 @@ module.exports.removeAllergies = ({ body: { allergies }, headers: { token } }, r
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.addRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
+const buildAddRecipesFunctions = (email, meals) => {
+  const addRecipesFunctions = {};
+  Object.keys(meals).map((meal) => {
+    if (meals[meal]) {
+      addRecipesFunctions[meal] = waterfallCallback => async.waterfall([
+        innerCallback => recipeModel.filterRecipeIds(meals[meal], innerCallback),
+        (filterRecipeIds, innerCallback) => {
+          usersModel.addRecipesToMealPlan(email, meal, filterRecipeIds, innerCallback);
+        },
+      ], waterfallCallback);
+    }
+  });
+  return addRecipesFunctions;
+};
+
+module.exports.addRecipesToMealPlan = (
+  {
+    body: { breakfast, lunch, dinner },
+    headers: { token },
+  },
+  res,
+) => {
   async.auto({
     verifyToken: callback => verifyToken(token, res, callback),
-    filterRecipeIds: callback => recipeModel.filterRecipeIds(recipeIds, callback),
-    addRecipes: [
-      'verifyToken',
-      'filterRecipeIds',
-      ({ filterRecipeIds, verifyToken: { email } }, callback) => {
-        usersModel.addRecipesToMealPlan(email, filterRecipeIds, callback);
-      },
-    ],
+    filterRecipeIds: ['verifyToken', ({ verifyToken: { email } }, callback) => {
+      const addRecipesFunctions = buildAddRecipesFunctions(email, { breakfast, lunch, dinner });
+      async.parallel(addRecipesFunctions, callback);
+    }],
   }, err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.removeRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
+const buildRemoveRecipesFunctions = (email, meals) => {
+  const removeRecipesFunctions = {};
+  Object.keys(meals).map((meal) => {
+    if (meals[meal]) {
+      removeRecipesFunctions[meal] = (callback) => {
+        usersModel.removeRecipesToMealPlan(email, meal, meals[meal], callback);
+      };
+    }
+  });
+  return removeRecipesFunctions;
+};
+
+module.exports.removeRecipesToMealPlan = (
+  {
+    body: { breakfast, lunch, dinner },
+    headers: { token },
+  },
+  res,
+) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => usersModel.removeRecipesToMealPlan(email, recipeIds, next),
+    ({ email }, next) => {
+      const removeRecipesFunctions = buildRemoveRecipesFunctions(
+        email,
+        { breakfast, lunch, dinner },
+      );
+      async.parallel(removeRecipesFunctions, next);
+    },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };

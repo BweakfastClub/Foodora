@@ -293,34 +293,36 @@ module.exports.removeAllergies = (email, allergies, callback) => {
   ], callback);
 };
 
-const addRecipesToMealPlan = (client, collection, email, recipeIds, callback) => {
+const addRecipesToMealPlan = (client, collection, email, mealName, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $push: { mealPlan: { $each: recipeIds } } },
+    { $push: { [`mealPlan.${mealName}`]: { $each: recipeIds } } },
     () => client.close(callback),
   );
 };
 
-module.exports.addRecipesToMealPlan = (email, recipeIds, callback) => {
-  async.waterfall([
-    connect,
-    (client, collection, next) => addRecipesToMealPlan(client, collection, email, recipeIds, next),
-  ], callback);
-};
-
-const removeRecipesToMealPlan = (client, collection, email, recipeIds, callback) => {
-  collection.findOneAndUpdate(
-    { email },
-    { $pull: { mealPlan: { $in: recipeIds } } },
-    () => client.close(callback),
-  );
-};
-
-module.exports.removeRecipesToMealPlan = (email, recipeIds, callback) => {
+module.exports.addRecipesToMealPlan = (email, mealName, recipeIds, callback) => {
   async.waterfall([
     connect,
     (client, collection, next) => {
-      removeRecipesToMealPlan(client, collection, email, recipeIds, next);
+      addRecipesToMealPlan(client, collection, email, mealName, recipeIds, next);
+    },
+  ], callback);
+};
+
+const removeRecipesToMealPlan = (client, collection, email, mealName, recipeIds, callback) => {
+  collection.findOneAndUpdate(
+    { email },
+    { $pull: { [`mealPlan.${mealName}`]: { $in: recipeIds } } },
+    () => client.close(callback),
+  );
+};
+
+module.exports.removeRecipesToMealPlan = (email, mealName, recipeIds, callback) => {
+  async.waterfall([
+    connect,
+    (client, collection, next) => {
+      removeRecipesToMealPlan(client, collection, email, mealName, recipeIds, next);
     },
   ], callback);
 };
