@@ -148,9 +148,9 @@ module.exports.addRecipesToMealPlan = ({ body: { recipeIds }, headers: { token }
   }, err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-module.exports.removeRecipesToMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
+module.exports.removeRecipesFromMealPlan = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
     next => usersModel.verifyToken(token, next),
-    ({ email }, next) => usersModel.removeRecipesToMealPlan(email, recipeIds, next),
+    ({ email }, next) => usersModel.removeRecipesFromMealPlan(email, recipeIds, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
