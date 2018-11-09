@@ -12,7 +12,7 @@ module.exports.hashPassword = (password, next) => {
   );
 };
 
-module.exports.authorizeLogin = (email, password, userInfo, next) => {
+module.exports.authorizeLogin = (password, userInfo, next) => {
   bcrypt.compare(password, userInfo.hashedPassword, (err, res) => {
     if (err) {
       return next(err);
@@ -25,7 +25,7 @@ module.exports.authorizeLogin = (email, password, userInfo, next) => {
   });
 };
 
-module.exports.issueToken = ({ name, email }, next) => {
+module.exports.issueToken = (name, email, next) => {
   const token = jwt.sign({
     email,
     name,

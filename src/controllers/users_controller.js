@@ -170,14 +170,14 @@ const buildRemoveRecipesFunctions = (email, meals) => {
   Object.keys(meals).map((meal) => {
     if (meals[meal]) {
       removeRecipesFunctions[meal] = (callback) => {
-        usersModel.removeRecipesToMealPlan(email, meal, meals[meal], callback);
+        usersModel.removeRecipesFromMealPlan(email, meal, meals[meal], callback);
       };
     }
   });
   return removeRecipesFunctions;
 };
 
-module.exports.removeRecipesToMealPlan = (
+module.exports.removeRecipesFromMealPlan = (
   {
     body: { breakfast, lunch, dinner },
     headers: { token },

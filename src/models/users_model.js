@@ -3,28 +3,20 @@ const mongoClient = require('mongodb').MongoClient;
 const { env, url } = require('../../config');
 const auth = require('../services/auth');
 
-const connect = (next) => {
+const connect = (callback) => {
   mongoClient.connect(url, (err, client) => {
-    next(err, client, client.db(env).collection('users'));
+    callback(err, client, client.db(env).collection('users'));
   });
 };
 
 module.exports.connect = connect;
 
-const passClientConnection = (client, collection, obj, helperFunction, next) => {
-  helperFunction(obj, (err, res) => {
-    next(err, res, collection, client);
-  }, collection, client);
+const selectAllUsers = (collection, callback) => {
+  collection.find({}).toArray(callback);
 };
 
-const selectAllUsers = (client, collection, next) => {
-  collection.find({}).toArray((err, items) => {
-    client.close(() => next(err, items));
-  });
-};
-
-const countLikedRecipes = (client, collection, callback) => {
-  selectAllUsers(client, collection, (err, users) => {
+const countLikedRecipes = (collection, callback) => {
+  selectAllUsers(collection, (err, users) => {
     const likedRecipesCount = users.reduce(
       (counter, { likedRecipes = [] }) => {
         likedRecipes.forEach((recipeId) => {
@@ -42,18 +34,21 @@ const countLikedRecipes = (client, collection, callback) => {
 };
 
 module.exports.countLikedRecipes = (callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    countLikedRecipes,
-  ], callback);
+    countLikedRecipes: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      countLikedRecipes(collection, autoCallback);
+    }],
+  }, (err, results) => callback(err, results.countLikedRecipes));
 };
 
-const deleteUser = ({ userInfo }, callback, collection, client) => {
+const deleteUser = (collection, userInfo, callback) => {
   collection.remove({ email: userInfo.email }, (err, result) => {
     if (err) {
       return callback(err, null);
     }
-    return client.close(() => callback(result, { userInfo }));
+    return callback(result, { userInfo });
   });
 };
 
@@ -65,150 +60,178 @@ const storeUser = (collection, name, email, hashedPassword, callback) => {
   }, callback);
 };
 
-const registerUser = ({ name, email, password }, callback, collection) => {
+const registerUser = (collection, name, email, password, callback) => {
   async.waterfall([
     next => auth.hashPassword(password, next),
     (hashedPassword, next) => storeUser(collection, name, email, hashedPassword, next),
   ], callback);
 };
 
-const authorizeLogin = ({ email, password, userInfo }, next) => {
+const authorizeLogin = (password, userInfo, callback) => {
   auth.authorizeLogin(
-    email,
     password,
     userInfo,
-    (err, loggedInUserInfo) => next(err, err ? null : { userInfo: loggedInUserInfo }),
+    (err, loggedInUserInfo) => callback(err, err ? null : { userInfo: loggedInUserInfo }),
   );
 };
 
-const getToken = ({ userInfo }, next) => {
-  auth.issueToken(userInfo, (err, token) => {
-    next(err, token);
-  });
+const getToken = (name, email, callback) => {
+  auth.issueToken(name, email, callback);
 };
 
-const fetchUserInfo = ({ email, password }, callback, collection) => {
+const fetchUserInfo = (collection, email, callback) => {
   collection.findOne({ email }, (err, userInfo) => {
     if (!userInfo) {
       return callback({ message: 'username does not exist' });
     }
-    const res = {
-      email,
-      password,
-      userInfo,
-    };
-
-    return callback(err, res);
+    return callback(err, userInfo);
   });
 };
 
 module.exports.authorizeUser = ({ email, password }, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, outerNext) => async.waterfall([
-      next => fetchUserInfo({ email, password }, next, collection),
-      (userInfo, next) => authorizeLogin(userInfo, next),
-    ], err => client.close(() => outerNext(err))),
-  ], err => callback(err));
+    fetchUserInfo: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      fetchUserInfo(collection, email, autoCallback);
+    }],
+    authorizeLogin: ['fetchUserInfo', (results, autoCallback) => {
+      authorizeLogin(password, results.fetchUserInfo, autoCallback);
+    }],
+    closeClient: ['connect', 'authorizeLogin', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, err => callback(err));
 };
 
-const dropUserTable = (client, collection, next) => {
-  collection.drop(() => client.close(next));
+const dropUserTable = (collection, callback) => {
+  collection.drop(callback);
 };
 
-const createEmailUniqueIndex = (__, collection, next) => {
-  collection.createIndex({ email: 1 }, { unique: true }, next);
+const createEmailUniqueIndex = (__, collection, callback) => {
+  collection.createIndex({ email: 1 }, { unique: true }, callback);
 };
 
 module.exports.clean = (callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    dropUserTable,
-  ], callback);
+    dropUserTable: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      dropUserTable(collection, autoCallback);
+    }],
+    closeClient: ['connect', 'dropUserTable', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => callback(err, results.dropUserTable));
 };
 
 module.exports.findAllUsers = (callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    selectAllUsers,
-  ], callback);
+    selectAllUsers: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      selectAllUsers(collection, autoCallback);
+    }],
+    closeClient: ['connect', 'selectAllUsers', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => callback(err, results.selectAllUsers));
 };
 
 module.exports.registerUser = (name, email, password, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => {
-      passClientConnection(client, collection, { name, email, password }, registerUser, next);
-    },
-    (__, client, collection, next) => {
-      passClientConnection(client, collection, { userInfo: { name, email } }, getToken, next);
-    },
-    (token, client, __, next) => {
-      client.close(next(null, token));
-    },
-  ], callback);
+    registerUser: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      registerUser(collection, name, email, password, autoCallback);
+    }],
+    getToken: ['registerUser', (_, autoCallback) => {
+      getToken(name, email, autoCallback);
+    }],
+    closeClient: ['connect', 'getToken', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => {
+    callback(err, results.getToken);
+  });
 };
 
 module.exports.deleteUser = (email, password, callback) => {
-  const obj = {
-    email,
-    password,
-  };
-
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => {
-      passClientConnection(client, collection, obj, fetchUserInfo, next);
-    },
-    (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, authorizeLogin, next);
-    },
-    (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, deleteUser, next);
-    },
-  ], callback);
+    fetchUserInfo: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      fetchUserInfo(collection, email, autoCallback);
+    }],
+    authorizeLogin: ['fetchUserInfo', (results, autoCallback) => {
+      authorizeLogin(password, results.fetchUserInfo, autoCallback);
+    }],
+    deleteUser: ['connect', 'fetchUserInfo', 'authorizeLogin', (results, autoCallback) => {
+      const collection = results.connect[1];
+      deleteUser(collection, results.fetchUserInfo, autoCallback);
+    }],
+    closeClient: ['connect', 'deleteUser', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, callback);
 };
 
 module.exports.login = (email, password, callback) => {
-  const obj = {
-    email,
-    password,
-  };
-
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => {
-      passClientConnection(client, collection, obj, fetchUserInfo, next);
-    },
-    (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, authorizeLogin, next);
-    },
-    (userInfo, client, collection, next) => {
-      passClientConnection(client, collection, userInfo, getToken, next);
-    },
-  ], callback);
+    fetchUserInfo: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      fetchUserInfo(collection, email, autoCallback);
+    }],
+    authorizeLogin: ['fetchUserInfo', (results, autoCallback) => {
+      authorizeLogin(password, results.fetchUserInfo, autoCallback);
+    }],
+    getToken: ['authorizeLogin', (results, autoCallback) => {
+      getToken(results.fetchUserInfo.name, email, autoCallback);
+    }],
+    closeClient: ['connect', 'getToken', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => {
+    callback(err, results.getToken);
+  });
 };
 
 module.exports.verifyToken = (token, callback) => {
   auth.verifyToken(token, callback);
 };
 
-const getUserInfo = (client, collection, email, callback) => {
+const getUserInfo = (collection, email, callback) => {
   collection.findOne(
     { email },
     { projection: { hashedPassword: 0, _id: 0 } },
-    (err, result) => client.close(() => callback(err, result)),
+    callback,
   );
 };
 
 module.exports.getUserInfo = (email, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => getUserInfo(client, collection, email, next),
-  ], callback);
+    getUserInfo: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      getUserInfo(collection, email, autoCallback);
+    }],
+    closeClient: ['connect', 'getUserInfo', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => {
+    callback(err, results.getUserInfo);
+  });
 };
 
-const changeUserInfo = async (client, collection, email, password, name, callback) => {
+const changeUserInfo = async (collection, email, password, name, callback) => {
   let changeContent = {};
   if (name) {
     changeContent = { ...changeContent, name };
@@ -227,108 +250,151 @@ const changeUserInfo = async (client, collection, email, password, name, callbac
 };
 
 module.exports.changeUserInfo = (email, password, name, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => {
-      changeUserInfo(client, collection, email, password, name, next);
-    },
-  ], (err, res) => {
-    callback(err, res);
+    changeUserInfo: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      changeUserInfo(collection, email, password, name, autoCallback);
+    }],
+    closeClient: ['connect', 'changeUserInfo', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => {
+    callback(err, results.changeUserInfo);
   });
 };
 
-const likesRecipes = (client, collection, email, recipeIds, callback) => {
+const likesRecipes = (collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
     { $push: { likedRecipes: { $each: recipeIds } } },
-    () => client.close(callback),
+    callback,
   );
 };
 
 module.exports.likesRecipes = (email, recipeIds, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => likesRecipes(client, collection, email, recipeIds, next),
-  ], callback);
+    likesRecipes: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      likesRecipes(collection, email, recipeIds, autoCallback);
+    }],
+    closeClient: ['connect', 'likesRecipes', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, callback);
 };
 
-const unlikesRecipes = (client, collection, email, recipeIds, callback) => {
+const unlikesRecipes = (collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
     { $pull: { likedRecipes: { $in: recipeIds } } },
-    () => client.close(callback),
+    callback,
   );
 };
 
 module.exports.unlikesRecipes = (email, recipeIds, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => unlikesRecipes(client, collection, email, recipeIds, next),
-  ], callback);
+    unlikesRecipes: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      unlikesRecipes(collection, email, recipeIds, autoCallback);
+    }],
+    closeClient: ['connect', 'unlikesRecipes', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, callback);
 };
 
-const addAllergies = (client, collection, email, allergies, callback) => {
+const addAllergies = (collection, email, allergies, callback) => {
   collection.findOneAndUpdate(
     { email },
     { $push: { foodAllergies: { $each: allergies } } },
-    () => client.close(callback),
+    callback,
   );
 };
 
 module.exports.addAllergies = (email, allergies, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => addAllergies(client, collection, email, allergies, next),
-  ], callback);
+    addAllergies: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      addAllergies(collection, email, allergies, autoCallback);
+    }],
+    closeClient: ['connect', 'addAllergies', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, callback);
 };
 
-const removeAllergies = (client, collection, email, allergies, callback) => {
+const removeAllergies = (collection, email, allergies, callback) => {
   collection.findOneAndUpdate(
     { email },
     { $pull: { foodAllergies: { $in: allergies } } },
-    () => client.close(callback),
+    callback,
   );
 };
 
 module.exports.removeAllergies = (email, allergies, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => removeAllergies(client, collection, email, allergies, next),
-  ], callback);
+    removeAllergies: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      removeAllergies(collection, email, allergies, autoCallback);
+    }],
+    closeClient: ['connect', 'removeAllergies', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, callback);
 };
 
-const addRecipesToMealPlan = (client, collection, email, mealName, recipeIds, callback) => {
+const addRecipesToMealPlan = (collection, email, mealName, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
     { $push: { [`mealPlan.${mealName}`]: { $each: recipeIds } } },
-    () => client.close(callback),
+    callback,
+  );
+};
+
+const removeRecipesFromMealPlan = (collection, email, mealName, recipeIds, callback) => {
+  collection.findOneAndUpdate(
+    { email },
+    { $pull: { [`mealPlan.${mealName}`]: { $in: recipeIds } } },
+    callback,
   );
 };
 
 module.exports.addRecipesToMealPlan = (email, mealName, recipeIds, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    (client, collection, next) => {
-      addRecipesToMealPlan(client, collection, email, mealName, recipeIds, next);
-    },
-  ], callback);
+    addRecipesToMealPlan: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      addRecipesToMealPlan(collection, email, mealName, recipeIds, autoCallback);
+    }],
+    closeClient: ['connect', 'addRecipesToMealPlan', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, callback);
 };
 
-const removeRecipesToMealPlan = (client, collection, email, mealName, recipeIds, callback) => {
-  collection.findOneAndUpdate(
-    { email },
-    { $pull: { [`mealPlan.${mealName}`]: { $in: recipeIds } } },
-    () => client.close(callback),
-  );
-};
-
-module.exports.removeRecipesToMealPlan = (email, mealName, recipeIds, callback) => {
-  async.waterfall([
+module.exports.removeRecipesFromMealPlan = (email, mealName, recipeIds, callback) => {
+  async.auto({
     connect,
-    (client, collection, next) => {
-      removeRecipesToMealPlan(client, collection, email, mealName, recipeIds, next);
-    },
-  ], callback);
+    removeRecipesFromMealPlan: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      removeRecipesFromMealPlan(collection, email, mealName, recipeIds, autoCallback);
+    }],
+    closeClient: ['connect', 'removeRecipesFromMealPlan', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, callback);
 };
 
 module.exports.setup = (callback) => {
