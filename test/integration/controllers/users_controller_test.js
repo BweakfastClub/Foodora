@@ -792,83 +792,345 @@ describe('Endpoint tests', () => {
       usersModel.clean(done);
     });
 
-    it('adds recipes to the meal plan successfully', (done) => {
-      chai.request(usersRoutes)
-        .post('/users/meal_plan')
-        .set('content-type', 'application/json')
-        .set('token', userToken)
-        .send({ recipeIds: [25449, 237491, 246256] })
-        .end((mealPlanErr, mealPlanRes) => {
-          should.not.exist(mealPlanErr);
-          mealPlanRes.should.have.status(200);
-          chai.request(usersRoutes)
-            .get('/users/user_info')
-            .set('content-type', 'application/json')
-            .set('token', userToken)
-            .end((userInfoErr, userInfoRes) => {
-              should.not.exist(userInfoErr);
-              userInfoRes.should.have.status(200);
-              should.exist(userInfoRes.body.mealPlan);
-              expect(userInfoRes.body.mealPlan).to.include.members([25449, 237491, 246256]);
-              done();
-            });
-        });
+    it('adds recipes to the breakfast meal plan successfully', (done) => {
+      async.auto({
+        addRecipeToBreakfast: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [25449, 237491, 246256] })
+          .end(callback),
+        getUserInfo: ['addRecipeToBreakfast', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToBreakfast, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToBreakfast.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.breakfast);
+        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([25449, 237491, 246256]);
+        done();
+      });
     });
 
-    it('ignores adding invalid recipes to the meal plan', (done) => {
-      chai.request(usersRoutes)
-        .post('/users/meal_plan')
-        .set('content-type', 'application/json')
-        .set('token', userToken)
-        .send({ recipeIds: [9999999] })
-        .end((mealPlanErr, mealPlanRes) => {
-          should.not.exist(mealPlanErr);
-          mealPlanRes.should.have.status(200);
-          chai.request(usersRoutes)
-            .get('/users/user_info')
-            .set('content-type', 'application/json')
-            .set('token', userToken)
-            .end((userInfoErr, userInfoRes) => {
-              should.not.exist(userInfoErr);
-              userInfoRes.should.have.status(200);
-              should.exist(userInfoRes.body.mealPlan);
-              expect(userInfoRes.body.mealPlan).to.not.include(9999999);
-              done();
-            });
-        });
+    it('adds recipes to the lunch meal plan successfully', (done) => {
+      async.auto({
+        addRecipeToLunch: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ lunch: [25449, 237491, 246256] })
+          .end(callback),
+        getUserInfo: ['addRecipeToLunch', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToLunch, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToLunch.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.lunch);
+        expect(getUserInfo.body.mealPlan.lunch).to.include.members([25449, 237491, 246256]);
+        done();
+      });
     });
 
-    it('removes a recipe from the meal plan successfully', (done) => {
-      chai.request(usersRoutes)
-        .post('/users/meal_plan')
-        .set('content-type', 'application/json')
-        .set('token', userToken)
-        .send({ recipeIds: [51147, 241000, 237835] })
-        .end((addRecipeToMealPlanErr, addRecipeToMealPlanRes) => {
-          should.not.exist(addRecipeToMealPlanErr);
-          addRecipeToMealPlanRes.should.have.status(200);
-          chai.request(usersRoutes)
-            .delete('/users/meal_plan')
-            .set('content-type', 'application/json')
-            .set('token', userToken)
-            .send({ recipeIds: [241000, 237835] })
-            .end((removeRecipeFromMealPlanErr, removeRecipeFromMealPlanRes) => {
-              should.not.exist(removeRecipeFromMealPlanErr);
-              removeRecipeFromMealPlanRes.should.have.status(200);
-              chai.request(usersRoutes)
-                .get('/users/user_info')
-                .set('content-type', 'application/json')
-                .set('token', userToken)
-                .end((userInfoErr, userInfoRes) => {
-                  should.not.exist(userInfoErr);
-                  userInfoRes.should.have.status(200);
-                  should.exist(userInfoRes.body.mealPlan);
-                  expect(userInfoRes.body.mealPlan).to.include.members([51147]);
-                  expect(userInfoRes.body.mealPlan).to.not.have.members([241000, 237835]);
-                  done();
-                });
-            });
-        });
+
+    it('adds recipes to the dinner meal plan successfully', (done) => {
+      async.auto({
+        addRecipeToDinner: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ dinner: [25449, 237491, 246256] })
+          .end(callback),
+        getUserInfo: ['addRecipeToDinner', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToDinner, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToDinner.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.dinner);
+        expect(getUserInfo.body.mealPlan.dinner).to.include.members([25449, 237491, 246256]);
+        done();
+      });
+    });
+
+    it('adds recipes to the multiple meals successfully', (done) => {
+      async.auto({
+        addRecipeToMeals: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({
+            breakfast: [246255, 33474],
+            lunch: [246255, 33474],
+            dinner: [246255, 33474],
+          })
+          .end(callback),
+        getUserInfo: ['addRecipeToMeals', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToMeals, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToMeals.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.breakfast);
+        should.exist(getUserInfo.body.mealPlan.lunch);
+        should.exist(getUserInfo.body.mealPlan.dinner);
+        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([246255, 33474]);
+        expect(getUserInfo.body.mealPlan.lunch).to.include.members([246255, 33474]);
+        expect(getUserInfo.body.mealPlan.dinner).to.include.members([246255, 33474]);
+        done();
+      });
+    });
+
+    it('ignores adding invalid recipes to breakfast', (done) => {
+      async.auto({
+        addRecipeToBreakfast: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [9999999] })
+          .end(callback),
+        getUserInfo: ['addRecipeToBreakfast', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToBreakfast, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToBreakfast.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.breakfast);
+        expect(getUserInfo.body.mealPlan.breakfast).to.not.include(9999999);
+        done();
+      });
+    });
+
+    it('ignores adding invalid recipes to lunch', (done) => {
+      async.auto({
+        addRecipeToLunch: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ lunch: [9999999] })
+          .end(callback),
+        getUserInfo: ['addRecipeToLunch', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToLunch, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToLunch.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.lunch);
+        expect(getUserInfo.body.mealPlan.lunch).to.not.include(9999999);
+        done();
+      });
+    });
+
+    it('ignores adding invalid recipes to dinner', (done) => {
+      async.auto({
+        addRecipeToDinner: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ dinner: [9999999] })
+          .end(callback),
+        getUserInfo: ['addRecipeToDinner', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToDinner, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToDinner.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.dinner);
+        expect(getUserInfo.body.mealPlan.dinner).to.not.include(9999999);
+        done();
+      });
+    });
+
+    it('ignores adding invalid recipes to multiple meals', (done) => {
+      async.auto({
+        addRecipeToMeals: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({
+            breakfast: [9999999],
+            lunch: [9999999],
+            dinner: [9999999],
+          })
+          .end(callback),
+        getUserInfo: ['addRecipeToMeals', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToMeals, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToMeals.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.breakfast);
+        should.exist(getUserInfo.body.mealPlan.lunch);
+        should.exist(getUserInfo.body.mealPlan.dinner);
+        expect(getUserInfo.body.mealPlan.breakfast).to.not.include(9999999);
+        expect(getUserInfo.body.mealPlan.lunch).to.not.include(9999999);
+        expect(getUserInfo.body.mealPlan.dinner).to.not.include(9999999);
+        done();
+      });
+    });
+
+    it('removes a recipe from breakfast successfully', (done) => {
+      async.auto({
+        addRecipeToBreakfast: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [51147, 241000, 237835] })
+          .end(callback),
+        removeRecipeFromBreakfast: ['addRecipeToBreakfast', (results, callback) => chai.request(usersRoutes)
+          .delete('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [241000, 237835] })
+          .end(callback)],
+        getUserInfo: ['removeRecipeFromBreakfast', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { addRecipeToBreakfast, removeRecipeFromBreakfast, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToBreakfast.should.have.status(200);
+        removeRecipeFromBreakfast.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([51147]);
+        expect(getUserInfo.body.mealPlan.breakfast).to.not.have.members([241000, 237835]);
+        done();
+      });
+    });
+
+    it('removes a recipe from lunch successfully', (done) => {
+      async.auto({
+        addRecipeToLunch: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ lunch: [51147, 241000, 237835] })
+          .end(callback),
+        removeRecipeFromLunch: ['addRecipeToLunch', (results, callback) => chai.request(usersRoutes)
+          .delete('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ lunch: [241000, 237835] })
+          .end(callback)],
+        getUserInfo: ['removeRecipeFromLunch', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { addRecipeToLunch, removeRecipeFromLunch, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToLunch.should.have.status(200);
+        removeRecipeFromLunch.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        expect(getUserInfo.body.mealPlan.lunch).to.include.members([51147]);
+        expect(getUserInfo.body.mealPlan.lunch).to.not.have.members([241000, 237835]);
+        done();
+      });
+    });
+
+    it('removes a recipe from dinner successfully', (done) => {
+      async.auto({
+        addRecipeToDinner: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ dinner: [51147, 241000, 237835] })
+          .end(callback),
+        removeRecipeFromDinner: ['addRecipeToDinner', (results, callback) => chai.request(usersRoutes)
+          .delete('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ dinner: [241000, 237835] })
+          .end(callback)],
+        getUserInfo: ['removeRecipeFromDinner', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { addRecipeToDinner, removeRecipeFromDinner, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToDinner.should.have.status(200);
+        removeRecipeFromDinner.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        expect(getUserInfo.body.mealPlan.dinner).to.include.members([51147]);
+        expect(getUserInfo.body.mealPlan.dinner).to.not.have.members([241000, 237835]);
+        done();
+      });
+    });
+
+    it('removes a recipe from multiple meals successfully', (done) => {
+      async.auto({
+        addRecipeToMeals: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({
+            breakfast: [51147, 241000, 237835],
+            lunch: [51147, 241000, 237835],
+            dinner: [51147, 241000, 237835],
+          })
+          .end(callback),
+        removeRecipeFromMeals: ['addRecipeToMeals', (results, callback) => chai.request(usersRoutes)
+          .delete('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({
+            breakfast: [241000, 237835],
+            lunch: [241000, 237835],
+            dinner: [241000, 237835],
+          })
+          .end(callback)],
+        getUserInfo: ['removeRecipeFromMeals', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { addRecipeToMeals, removeRecipeFromMeals, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToMeals.should.have.status(200);
+        removeRecipeFromMeals.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([51147]);
+        expect(getUserInfo.body.mealPlan.lunch).to.include.members([51147]);
+        expect(getUserInfo.body.mealPlan.dinner).to.include.members([51147]);
+        expect(getUserInfo.body.mealPlan.breakfast).to.not.have.members([241000, 237835]);
+        expect(getUserInfo.body.mealPlan.lunch).to.not.have.members([241000, 237835]);
+        expect(getUserInfo.body.mealPlan.dinner).to.not.have.members([241000, 237835]);
+        done();
+      });
     });
   });
 });

@@ -353,20 +353,28 @@ module.exports.removeAllergies = (email, allergies, callback) => {
   }, callback);
 };
 
-const addRecipesToMealPlan = (collection, email, recipeIds, callback) => {
+const addRecipesToMealPlan = (collection, email, mealName, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $push: { mealPlan: { $each: recipeIds } } },
+    { $push: { [`mealPlan.${mealName}`]: { $each: recipeIds } } },
     callback,
   );
 };
 
-module.exports.addRecipesToMealPlan = (email, recipeIds, callback) => {
+const removeRecipesFromMealPlan = (collection, email, mealName, recipeIds, callback) => {
+  collection.findOneAndUpdate(
+    { email },
+    { $pull: { [`mealPlan.${mealName}`]: { $in: recipeIds } } },
+    callback,
+  );
+};
+
+module.exports.addRecipesToMealPlan = (email, mealName, recipeIds, callback) => {
   async.auto({
     connect,
     addRecipesToMealPlan: ['connect', (results, autoCallback) => {
       const collection = results.connect[1];
-      addRecipesToMealPlan(collection, email, recipeIds, autoCallback);
+      addRecipesToMealPlan(collection, email, mealName, recipeIds, autoCallback);
     }],
     closeClient: ['connect', 'addRecipesToMealPlan', (results, autoCallback) => {
       const client = results.connect[0];
@@ -375,20 +383,12 @@ module.exports.addRecipesToMealPlan = (email, recipeIds, callback) => {
   }, callback);
 };
 
-const removeRecipesFromMealPlan = (collection, email, recipeIds, callback) => {
-  collection.findOneAndUpdate(
-    { email },
-    { $pull: { mealPlan: { $in: recipeIds } } },
-    callback,
-  );
-};
-
-module.exports.removeRecipesFromMealPlan = (email, recipeIds, callback) => {
+module.exports.removeRecipesFromMealPlan = (email, mealName, recipeIds, callback) => {
   async.auto({
     connect,
     removeRecipesFromMealPlan: ['connect', (results, autoCallback) => {
       const collection = results.connect[1];
-      removeRecipesFromMealPlan(collection, email, recipeIds, autoCallback);
+      removeRecipesFromMealPlan(collection, email, mealName, recipeIds, autoCallback);
     }],
     closeClient: ['connect', 'removeRecipesFromMealPlan', (results, autoCallback) => {
       const client = results.connect[0];
