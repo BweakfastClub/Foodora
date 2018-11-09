@@ -65,10 +65,23 @@ module.exports.login = ({ body: { email = null, password = null } }, res) => {
 };
 
 module.exports.getUserInfo = ({ headers: { token } }, res) => {
-  async.waterfall([
-    next => usersModel.verifyToken(token, next),
-    ({ email }, next) => usersModel.getUserInfo(email, next),
-  ], (err, userInfo) => res.status(err ? 500 : 200).json(err || userInfo));
+  async.auto({
+    verifyToken: autoCallback => usersModel.verifyToken(token, autoCallback),
+    getUserInfo: ['verifyToken', ({ verifyToken: { email } }, autoCallback) => {
+      usersModel.getUserInfo(email, autoCallback);
+    }],
+    populateDetailedLikedRecipes: ['getUserInfo', ({ getUserInfo }, autoCallback) => {
+      if (getUserInfo.likedRecipes && getUserInfo.likedRecipes.length !== 0) {
+        recipeModel.selectRecipesByIds(getUserInfo.likedRecipes, (err, likedRecipes) => {
+          autoCallback(err, err ? getUserInfo : { ...getUserInfo, likedRecipes });
+        });
+      } else {
+        autoCallback(null, getUserInfo);
+      }
+    }],
+  }, (err, { populateDetailedLikedRecipes }) => {
+    res.status(err ? 500 : 200).json(err ? null : populateDetailedLikedRecipes);
+  });
 };
 
 module.exports.changeUserInfo = (
