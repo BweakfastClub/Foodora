@@ -535,35 +535,25 @@ describe('Endpoint tests', () => {
   describe('liked recipes tests', () => {
     let userToken = null;
 
-    before((done) => {
-      async.waterfall([
-        next => chai.request(usersRoutes)
-          .post('/users')
-          .set('content-type', 'application/json')
-          .send({
-            email: 'user@email.com',
-            name: 'user',
-            password: '1234',
-          })
-          .end(next),
-        (res, next) => chai.request(usersRoutes)
-          .post('/users/login')
-          .set('content-type', 'application/json')
-          .send({
-            email: 'user@email.com',
-            password: '1234',
-          })
-          .end(next),
-      ], (err, loginRes) => {
-        should.not.exist(err);
-        loginRes.should.have.status(200);
-        should.exist(loginRes.body.token);
-        userToken = loginRes.body.token;
-        done();
-      });
+    beforeEach((done) => {
+      chai.request(usersRoutes)
+        .post('/users')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'user@email.com',
+          name: 'user',
+          password: '1234',
+        })
+        .end((err, registerRes) => {
+          should.not.exist(err);
+          registerRes.should.have.status(200);
+          should.exist(registerRes.body.token);
+          userToken = registerRes.body.token;
+          done();
+        });
     });
 
-    after((done) => {
+    afterEach((done) => {
       usersModel.clean(done);
     });
 
@@ -585,6 +575,35 @@ describe('Endpoint tests', () => {
         expect(likeRecipes.should.have.status(200));
         expect(getUserInfo.should.have.status(200));
         expect(getUserInfo.body.likedRecipes).to.have.members([68461, 15184, 20669]);
+        done();
+      });
+    });
+
+    it('only likes a recipe once', (done) => {
+      async.auto({
+        likeRecipes: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [68461, 15184, 20669] })
+          .end(callback),
+        likeSameRecipesAgain: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [68461, 15184, 20669] })
+          .end(callback),
+        getUserInfo: ['likeRecipes', 'likeSameRecipesAgain', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { likeRecipes, likeSameRecipesAgain, getUserInfo }) => {
+        should.not.exist(err);
+        expect(likeRecipes.should.have.status(200));
+        expect(likeSameRecipesAgain.should.have.status(200));
+        expect(getUserInfo.should.have.status(200));
+        expect(getUserInfo.body.likedRecipes.sort()).to.deep.equal([68461, 15184, 20669].sort());
         done();
       });
     });
@@ -668,59 +687,82 @@ describe('Endpoint tests', () => {
   describe('user allergy tests', () => {
     let userToken = null;
 
-    before((done) => {
-      async.waterfall([
-        next => chai.request(usersRoutes)
-          .post('/users')
-          .set('content-type', 'application/json')
-          .send({
-            email: 'user@email.com',
-            name: 'user',
-            password: '1234',
-          })
-          .end(next),
-        (res, next) => chai.request(usersRoutes)
-          .post('/users/login')
-          .set('content-type', 'application/json')
-          .send({
-            email: 'user@email.com',
-            password: '1234',
-          })
-          .end(next),
-      ], (err, loginRes) => {
-        should.not.exist(err);
-        loginRes.should.have.status(200);
-        should.exist(loginRes.body.token);
-        userToken = loginRes.body.token;
-        done();
-      });
+    beforeEach((done) => {
+      chai.request(usersRoutes)
+        .post('/users')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'user@email.com',
+          name: 'user',
+          password: '1234',
+        })
+        .end((err, registerRes) => {
+          should.not.exist(err);
+          registerRes.should.have.status(200);
+          should.exist(registerRes.body.token);
+          userToken = registerRes.body.token;
+          done();
+        });
     });
 
-    after((done) => {
+    afterEach((done) => {
       usersModel.clean(done);
     });
 
     it('add an allergy successfully', (done) => {
-      chai.request(usersRoutes)
-        .post('/users/allergies')
-        .set('content-type', 'application/json')
-        .set('token', userToken)
-        .send({ allergies: ['peanuts', 'beef'] })
-        .end((allergyErr, allergyRes) => {
-          should.not.exist(allergyErr);
-          allergyRes.should.have.status(200);
-          chai.request(usersRoutes)
-            .get('/users/user_info')
-            .set('content-type', 'application/json')
-            .set('token', userToken)
-            .end((userInfoErr, userInfoRes) => {
-              should.not.exist(userInfoErr);
-              userInfoRes.should.have.status(200);
-              should.exist(userInfoRes.body.foodAllergies);
-              expect(userInfoRes.body.foodAllergies).to.include.members(['peanuts', 'beef']);
-              done();
-            });
-        });
+      async.auto({
+        addAllergies: callback => chai.request(usersRoutes)
+          .post('/users/allergies')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ allergies: ['peanuts', 'beef'] })
+          .end(callback),
+        getUserInfo: ['addAllergies', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addAllergies, getUserInfo }) => {
+        should.not.exist(err);
+        addAllergies.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.foodAllergies);
+        expect(getUserInfo.body.foodAllergies).to.include.members(['peanuts', 'beef']);
+        done();
+      });
+    });
+
+
+    it('add an allergy successfully', (done) => {
+      async.auto({
+        addAllergies: callback => chai.request(usersRoutes)
+          .post('/users/allergies')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ allergies: ['peanuts', 'beef'] })
+          .end(callback),
+        addSameAllergiesAgain: callback => chai.request(usersRoutes)
+          .post('/users/allergies')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ allergies: ['peanuts', 'beef'] })
+          .end(callback),
+        getUserInfo: ['addAllergies', 'addSameAllergiesAgain', (_, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addAllergies, addSameAllergiesAgain, getUserInfo }) => {
+        should.not.exist(err);
+        addAllergies.should.have.status(200);
+        addSameAllergiesAgain.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.foodAllergies);
+        expect(getUserInfo.body.foodAllergies.sort()).to.deep.equal(['peanuts', 'beef'].sort());
+        done();
+      });
     });
 
     it('removes an allergy successfully', (done) => {
@@ -760,35 +802,25 @@ describe('Endpoint tests', () => {
   describe('meal plan tests', () => {
     let userToken = null;
 
-    before((done) => {
-      async.waterfall([
-        next => chai.request(usersRoutes)
-          .post('/users')
-          .set('content-type', 'application/json')
-          .send({
-            email: 'user@email.com',
-            name: 'user',
-            password: '1234',
-          })
-          .end(next),
-        (res, next) => chai.request(usersRoutes)
-          .post('/users/login')
-          .set('content-type', 'application/json')
-          .send({
-            email: 'user@email.com',
-            password: '1234',
-          })
-          .end(next),
-      ], (err, loginRes) => {
-        should.not.exist(err);
-        loginRes.should.have.status(200);
-        should.exist(loginRes.body.token);
-        userToken = loginRes.body.token;
-        done();
-      });
+    beforeEach((done) => {
+      chai.request(usersRoutes)
+        .post('/users')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'user@email.com',
+          name: 'user',
+          password: '1234',
+        })
+        .end((err, registerRes) => {
+          should.not.exist(err);
+          registerRes.should.have.status(200);
+          should.exist(registerRes.body.token);
+          userToken = registerRes.body.token;
+          done();
+        });
     });
 
-    after((done) => {
+    afterEach((done) => {
       usersModel.clean(done);
     });
 
@@ -1129,6 +1161,37 @@ describe('Endpoint tests', () => {
         expect(getUserInfo.body.mealPlan.breakfast).to.not.have.members([241000, 237835]);
         expect(getUserInfo.body.mealPlan.lunch).to.not.have.members([241000, 237835]);
         expect(getUserInfo.body.mealPlan.dinner).to.not.have.members([241000, 237835]);
+        done();
+      });
+    });
+
+    it('adds recipes to the breakfast meal only once - ignoring the second time adding the same recipe', (done) => {
+      async.auto({
+        addRecipeToBreakfast: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [241000, 237835] })
+          .end(callback),
+        addSameRecipeToBreakfastAgain: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [241000, 237835] })
+          .end(callback),
+        getUserInfo: ['addRecipeToBreakfast', 'addSameRecipeToBreakfastAgain', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback),
+        ],
+      }, (err, { addRecipeToBreakfast, addSameRecipeToBreakfastAgain, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToBreakfast.should.have.status(200);
+        addSameRecipeToBreakfastAgain.should.have.status(200);
+        getUserInfo.should.have.status(200);
+        should.exist(getUserInfo.body.mealPlan.breakfast);
+        expect(getUserInfo.body.mealPlan.breakfast.sort()).to.deep.equal([241000, 237835].sort());
         done();
       });
     });
