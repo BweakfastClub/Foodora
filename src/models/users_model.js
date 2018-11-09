@@ -268,7 +268,7 @@ module.exports.changeUserInfo = (email, password, name, callback) => {
 const likesRecipes = (collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $push: { likedRecipes: { $each: recipeIds } } },
+    { $addToSet: { likedRecipes: { $each: recipeIds } } },
     callback,
   );
 };
@@ -312,7 +312,7 @@ module.exports.unlikesRecipes = (email, recipeIds, callback) => {
 const addAllergies = (collection, email, allergies, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $push: { foodAllergies: { $each: allergies } } },
+    { $addToSet: { foodAllergies: { $each: allergies } } },
     callback,
   );
 };
@@ -356,7 +356,7 @@ module.exports.removeAllergies = (email, allergies, callback) => {
 const addRecipesToMealPlan = (collection, email, mealName, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },
-    { $push: { [`mealPlan.${mealName}`]: { $each: recipeIds } } },
+    { $addToSet: { [`mealPlan.${mealName}`]: { $each: recipeIds } } },
     callback,
   );
 };
