@@ -574,7 +574,8 @@ describe('Endpoint tests', () => {
         should.not.exist(err);
         expect(likeRecipes.should.have.status(200));
         expect(getUserInfo.should.have.status(200));
-        expect(getUserInfo.body.likedRecipes).to.have.members([68461, 15184, 20669]);
+        const likedRecipeIds = getUserInfo.body.likedRecipes.map(recipeDetail => recipeDetail.id);
+        expect(likedRecipeIds).to.have.members([68461, 15184, 20669]);
         done();
       });
     });
@@ -603,7 +604,8 @@ describe('Endpoint tests', () => {
         expect(likeRecipes.should.have.status(200));
         expect(likeSameRecipesAgain.should.have.status(200));
         expect(getUserInfo.should.have.status(200));
-        expect(getUserInfo.body.likedRecipes.sort()).to.deep.equal([68461, 15184, 20669].sort());
+        const likedRecipeIds = getUserInfo.body.likedRecipes.map(recipeDetail => recipeDetail.id);
+        expect(likedRecipeIds.sort()).to.deep.equal([68461, 15184, 20669].sort());
         done();
       });
     });
@@ -625,7 +627,8 @@ describe('Endpoint tests', () => {
         should.not.exist(err);
         expect(likeRecipes.should.have.status(200));
         expect(getUserInfo.should.have.status(200));
-        expect(getUserInfo.body.likedRecipes).to.not.have.members([6666666666, 9999999999]);
+        const likedRecipeIds = getUserInfo.body.likedRecipes.map(recipeDetail => recipeDetail.id);
+        expect(likedRecipeIds).to.not.have.members([6666666666, 9999999999]);
         done();
       });
     });
@@ -647,8 +650,9 @@ describe('Endpoint tests', () => {
         should.not.exist(err);
         expect(likeRecipes.should.have.status(200));
         expect(getUserInfo.should.have.status(200));
-        expect(getUserInfo.body.likedRecipes).to.include(13838);
-        expect(getUserInfo.body.likedRecipes).to.not.have.members([777777777, 88888888888]);
+        const likedRecipeIds = getUserInfo.body.likedRecipes.map(recipeDetail => recipeDetail.id);
+        expect(likedRecipeIds).to.include(13838);
+        expect(likedRecipeIds).to.not.have.members([777777777, 88888888888]);
         done();
       });
     });
@@ -677,8 +681,9 @@ describe('Endpoint tests', () => {
         expect(likeRecipes.should.have.status(200));
         expect(unlikeRecipes.should.have.status(200));
         expect(getUserInfo.should.have.status(200));
-        expect(getUserInfo.body.likedRecipes).to.include(19673);
-        expect(getUserInfo.body.likedRecipes).to.not.have.members([71722, 14830]);
+        const likedRecipeIds = getUserInfo.body.likedRecipes.map(recipeDetail => recipeDetail.id);
+        expect(likedRecipeIds).to.include(19673);
+        expect(likedRecipeIds).to.not.have.members([71722, 14830]);
         done();
       });
     });
@@ -734,7 +739,7 @@ describe('Endpoint tests', () => {
     });
 
 
-    it('add an allergy successfully', (done) => {
+    it('only add an allergy once', (done) => {
       async.auto({
         addAllergies: callback => chai.request(usersRoutes)
           .post('/users/allergies')

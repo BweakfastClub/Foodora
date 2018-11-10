@@ -23,25 +23,30 @@ module.exports.selectRecipeById = (id, callback) => {
   ], callback);
 };
 
-const selectAllRecipes = (client, collection, next) => {
-  collection.find({}).toArray((err, items) => {
-    client.close(() => next(err, items));
-  });
+const selectAllRecipes = (collection, callback) => {
+  collection.find({}).toArray(callback);
 };
 
-const selectRecipesByIds = (client, collection, ids, next) => {
-  collection.find({ id: { $in: ids } }).toArray((err, item) => {
-    client.close(() => next(err, item));
-  });
+const selectRecipesByIds = (collection, ids, callback) => {
+  collection.find({ id: { $in: ids } }).toArray(callback);
 };
 
 module.exports.selectRecipesByIds = (ids, callback) => {
-  async.waterfall([
+  async.auto({
     connect,
-    ids.length === 0
-      ? selectAllRecipes
-      : (client, collection, next) => selectRecipesByIds(client, collection, ids, next),
-  ], callback);
+    selectRecipesByIds: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      if (ids.length === 0) {
+        selectAllRecipes(collection, autoCallback);
+      } else {
+        selectRecipesByIds(collection, ids, autoCallback);
+      }
+    }],
+    closeClient: ['connect', 'selectRecipesByIds', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => callback(err, results.selectRecipesByIds));
 };
 
 const filterRecipeIds = (client, collection, ids, next) => {
