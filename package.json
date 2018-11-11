@@ -24,6 +24,7 @@
     "nyc": "^13.1.0"
   },
   "devDependencies": {
+    "artillery": "^1.6.0-25",
     "chai": "^4.1.2",
     "chai-http": "^3.0.0",
     "cross-env": "^5.2.0",
