@@ -66,7 +66,7 @@ module.exports.login = ({ body: { email = null, password = null } }, res) => {
 
 module.exports.getUserInfo = ({ headers: { token } }, res) => {
   async.auto({
-    verifyToken: autoCallback => usersModel.verifyToken(token, autoCallback),
+    verifyToken: autoCallback => verifyToken(token, res, autoCallback),
     getUserInfo: ['verifyToken', ({ verifyToken: { email } }, autoCallback) => {
       usersModel.getUserInfo(email, autoCallback);
     }],
@@ -102,7 +102,7 @@ module.exports.changeUserInfo = (
     });
   }
   return async.waterfall([
-    outerNext => usersModel.verifyToken(token, outerNext),
+    outerNext => verifyToken(token, res, outerNext),
     ({ email }, outerNext) => async.waterfall([
       next => usersModel.authorizeUser({ email, password }, next),
       next => usersModel.changeUserInfo(email, newPassword, name, next),
@@ -128,21 +128,21 @@ module.exports.likesRecipes = ({ body: { recipeIds }, headers: { token } }, res)
 
 module.exports.unlikesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.waterfall([
-    next => usersModel.verifyToken(token, next),
+    next => verifyToken(token, res, next),
     ({ email }, next) => usersModel.unlikesRecipes(email, recipeIds, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.addAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
-    next => usersModel.verifyToken(token, next),
+    next => verifyToken(token, res, next),
     ({ email }, next) => usersModel.addAllergies(email, allergies, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
 module.exports.removeAllergies = ({ body: { allergies }, headers: { token } }, res) => {
   async.waterfall([
-    next => usersModel.verifyToken(token, next),
+    next => verifyToken(token, res, next),
     ({ email }, next) => usersModel.removeAllergies(email, allergies, next),
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
@@ -198,7 +198,7 @@ module.exports.removeRecipesFromMealPlan = (
   res,
 ) => {
   async.waterfall([
-    next => usersModel.verifyToken(token, next),
+    next => verifyToken(token, res, next),
     ({ email }, next) => {
       const removeRecipesFunctions = buildRemoveRecipesFunctions(
         email,
