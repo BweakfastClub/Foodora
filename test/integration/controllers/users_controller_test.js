@@ -848,7 +848,10 @@ describe('Endpoint tests', () => {
         addRecipeToBreakfast.should.have.status(200);
         getUserInfo.should.have.status(200);
         should.exist(getUserInfo.body.mealPlan.breakfast);
-        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([25449, 237491, 246256]);
+
+        const recipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+
+        expect(recipeIds).to.include.members([25449, 237491, 246256]);
         done();
       });
     });
@@ -872,7 +875,8 @@ describe('Endpoint tests', () => {
         addRecipeToLunch.should.have.status(200);
         getUserInfo.should.have.status(200);
         should.exist(getUserInfo.body.mealPlan.lunch);
-        expect(getUserInfo.body.mealPlan.lunch).to.include.members([25449, 237491, 246256]);
+        const recipeIds = getUserInfo.body.mealPlan.lunch.map(recipe => recipe.id);
+        expect(recipeIds).to.include.members([25449, 237491, 246256]);
         done();
       });
     });
@@ -897,7 +901,10 @@ describe('Endpoint tests', () => {
         addRecipeToDinner.should.have.status(200);
         getUserInfo.should.have.status(200);
         should.exist(getUserInfo.body.mealPlan.dinner);
-        expect(getUserInfo.body.mealPlan.dinner).to.include.members([25449, 237491, 246256]);
+
+        const recipeIds = getUserInfo.body.mealPlan.dinner.map(recipe => recipe.id);
+
+        expect(recipeIds).to.include.members([25449, 237491, 246256]);
         done();
       });
     });
@@ -924,12 +931,18 @@ describe('Endpoint tests', () => {
         should.not.exist(err);
         addRecipeToMeals.should.have.status(200);
         getUserInfo.should.have.status(200);
+
         should.exist(getUserInfo.body.mealPlan.breakfast);
         should.exist(getUserInfo.body.mealPlan.lunch);
         should.exist(getUserInfo.body.mealPlan.dinner);
-        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([246255, 33474]);
-        expect(getUserInfo.body.mealPlan.lunch).to.include.members([246255, 33474]);
-        expect(getUserInfo.body.mealPlan.dinner).to.include.members([246255, 33474]);
+
+        const breakfastRecipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+        const lunchRecipeIds = getUserInfo.body.mealPlan.lunch.map(recipe => recipe.id);
+        const dinnerRecipeIds = getUserInfo.body.mealPlan.dinner.map(recipe => recipe.id);
+
+        expect(breakfastRecipeIds).to.include.members([246255, 33474]);
+        expect(lunchRecipeIds).to.include.members([246255, 33474]);
+        expect(dinnerRecipeIds).to.include.members([246255, 33474]);
         done();
       });
     });
@@ -953,7 +966,10 @@ describe('Endpoint tests', () => {
         addRecipeToBreakfast.should.have.status(200);
         getUserInfo.should.have.status(200);
         should.exist(getUserInfo.body.mealPlan.breakfast);
-        expect(getUserInfo.body.mealPlan.breakfast).to.not.include(9999999);
+
+        const breakfastRecipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+
+        expect(breakfastRecipeIds).to.not.include(9999999);
         done();
       });
     });
@@ -977,7 +993,10 @@ describe('Endpoint tests', () => {
         addRecipeToLunch.should.have.status(200);
         getUserInfo.should.have.status(200);
         should.exist(getUserInfo.body.mealPlan.lunch);
-        expect(getUserInfo.body.mealPlan.lunch).to.not.include(9999999);
+
+        const lunchRecipeIds = getUserInfo.body.mealPlan.lunch.map(recipe => recipe.id);
+
+        expect(lunchRecipeIds).to.not.include(9999999);
         done();
       });
     });
@@ -1001,7 +1020,10 @@ describe('Endpoint tests', () => {
         addRecipeToDinner.should.have.status(200);
         getUserInfo.should.have.status(200);
         should.exist(getUserInfo.body.mealPlan.dinner);
-        expect(getUserInfo.body.mealPlan.dinner).to.not.include(9999999);
+
+        const dinnerRecipeIds = getUserInfo.body.mealPlan.dinner.map(recipe => recipe.id);
+
+        expect(dinnerRecipeIds).to.not.include(9999999);
         done();
       });
     });
@@ -1028,12 +1050,18 @@ describe('Endpoint tests', () => {
         should.not.exist(err);
         addRecipeToMeals.should.have.status(200);
         getUserInfo.should.have.status(200);
+
         should.exist(getUserInfo.body.mealPlan.breakfast);
         should.exist(getUserInfo.body.mealPlan.lunch);
         should.exist(getUserInfo.body.mealPlan.dinner);
-        expect(getUserInfo.body.mealPlan.breakfast).to.not.include(9999999);
-        expect(getUserInfo.body.mealPlan.lunch).to.not.include(9999999);
-        expect(getUserInfo.body.mealPlan.dinner).to.not.include(9999999);
+
+        const breakfastRecipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+        const lunchRecipeIds = getUserInfo.body.mealPlan.lunch.map(recipe => recipe.id);
+        const dinnerRecipeIds = getUserInfo.body.mealPlan.dinner.map(recipe => recipe.id);
+
+        expect(breakfastRecipeIds).to.not.include(9999999);
+        expect(lunchRecipeIds).to.not.include(9999999);
+        expect(dinnerRecipeIds).to.not.include(9999999);
         done();
       });
     });
@@ -1062,8 +1090,11 @@ describe('Endpoint tests', () => {
         addRecipeToBreakfast.should.have.status(200);
         removeRecipeFromBreakfast.should.have.status(200);
         getUserInfo.should.have.status(200);
-        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([51147]);
-        expect(getUserInfo.body.mealPlan.breakfast).to.not.have.members([241000, 237835]);
+
+        const breakfastRecipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+
+        expect(breakfastRecipeIds).to.include.members([51147]);
+        expect(breakfastRecipeIds).to.not.have.members([241000, 237835]);
         done();
       });
     });
@@ -1092,8 +1123,11 @@ describe('Endpoint tests', () => {
         addRecipeToLunch.should.have.status(200);
         removeRecipeFromLunch.should.have.status(200);
         getUserInfo.should.have.status(200);
-        expect(getUserInfo.body.mealPlan.lunch).to.include.members([51147]);
-        expect(getUserInfo.body.mealPlan.lunch).to.not.have.members([241000, 237835]);
+
+        const lunchRecipeIds = getUserInfo.body.mealPlan.lunch.map(recipe => recipe.id);
+
+        expect(lunchRecipeIds).to.include.members([51147]);
+        expect(lunchRecipeIds).to.not.have.members([241000, 237835]);
         done();
       });
     });
@@ -1122,8 +1156,11 @@ describe('Endpoint tests', () => {
         addRecipeToDinner.should.have.status(200);
         removeRecipeFromDinner.should.have.status(200);
         getUserInfo.should.have.status(200);
-        expect(getUserInfo.body.mealPlan.dinner).to.include.members([51147]);
-        expect(getUserInfo.body.mealPlan.dinner).to.not.have.members([241000, 237835]);
+
+        const dinnerRecipeIds = getUserInfo.body.mealPlan.dinner.map(recipe => recipe.id);
+
+        expect(dinnerRecipeIds).to.include.members([51147]);
+        expect(dinnerRecipeIds).to.not.have.members([241000, 237835]);
         done();
       });
     });
@@ -1160,12 +1197,18 @@ describe('Endpoint tests', () => {
         addRecipeToMeals.should.have.status(200);
         removeRecipeFromMeals.should.have.status(200);
         getUserInfo.should.have.status(200);
-        expect(getUserInfo.body.mealPlan.breakfast).to.include.members([51147]);
-        expect(getUserInfo.body.mealPlan.lunch).to.include.members([51147]);
-        expect(getUserInfo.body.mealPlan.dinner).to.include.members([51147]);
-        expect(getUserInfo.body.mealPlan.breakfast).to.not.have.members([241000, 237835]);
-        expect(getUserInfo.body.mealPlan.lunch).to.not.have.members([241000, 237835]);
-        expect(getUserInfo.body.mealPlan.dinner).to.not.have.members([241000, 237835]);
+
+        const breakfastRecipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+        const lunchRecipeIds = getUserInfo.body.mealPlan.lunch.map(recipe => recipe.id);
+        const dinnerRecipeIds = getUserInfo.body.mealPlan.dinner.map(recipe => recipe.id);
+
+        expect(breakfastRecipeIds).to.include.members([51147]);
+        expect(lunchRecipeIds).to.include.members([51147]);
+        expect(dinnerRecipeIds).to.include.members([51147]);
+
+        expect(breakfastRecipeIds).to.not.have.members([241000, 237835]);
+        expect(lunchRecipeIds).to.not.have.members([241000, 237835]);
+        expect(dinnerRecipeIds).to.not.have.members([241000, 237835]);
         done();
       });
     });
@@ -1196,7 +1239,10 @@ describe('Endpoint tests', () => {
         addSameRecipeToBreakfastAgain.should.have.status(200);
         getUserInfo.should.have.status(200);
         should.exist(getUserInfo.body.mealPlan.breakfast);
-        expect(getUserInfo.body.mealPlan.breakfast.sort()).to.deep.equal([241000, 237835].sort());
+
+        const breakfastRecipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+
+        expect(breakfastRecipeIds.sort()).to.deep.equal([241000, 237835].sort());
         done();
       });
     });

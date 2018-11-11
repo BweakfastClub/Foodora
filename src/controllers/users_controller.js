@@ -64,6 +64,23 @@ module.exports.login = ({ body: { email = null, password = null } }, res) => {
   }
 };
 
+const buildMealDetailsFunctions = (populateDetailedLikedRecipes) => {
+  return Object.keys(populateDetailedLikedRecipes.mealPlan).map((meal) => {
+    return (userInfoBeingBuilt, waterfallCallback) => {
+      if (meal && meal.length !== 0) {
+        recipeModel.selectRecipesByIds(
+          userInfoBeingBuilt.mealPlan[meal],
+          (err, recipesDetails) => {
+            if (!err) {
+              userInfoBeingBuilt.mealPlan[meal] = recipesDetails;
+            }
+            waterfallCallback(err, userInfoBeingBuilt);
+          },
+        );
+      }
+    };
+  });
+};
 
 module.exports.getUserInfo = ({ headers: { token } }, res) => {
   async.auto({
@@ -80,59 +97,22 @@ module.exports.getUserInfo = ({ headers: { token } }, res) => {
         autoCallback(null, getUserInfo);
       }
     }],
-    populateDetailedBreakfastRecipes: ['populateDetailedLikedRecipes', ({ populateDetailedLikedRecipes }, autoCallback) => {
+    populateDetailedMealRecipes: ['populateDetailedLikedRecipes', ({ populateDetailedLikedRecipes }, autoCallback) => {
       if (
-        populateDetailedLikedRecipes &&
-        populateDetailedLikedRecipes.mealPlan && 
-        populateDetailedLikedRecipes.mealPlan.breakfast && 
-        populateDetailedLikedRecipes.mealPlan.breakfast.length !== 0
+        populateDetailedLikedRecipes
+        && populateDetailedLikedRecipes.mealPlan
       ) {
-        recipeModel.selectRecipesByIds(populateDetailedLikedRecipes.mealPlan.breakfast, (err, breakfastRecipes) => {
-          if (!err) {
-            populateDetailedLikedRecipes.mealPlan.breakfast = breakfastRecipes;
-          }
-          autoCallback(err, populateDetailedLikedRecipes);
-        });
+        const mealDetailsFunctions = buildMealDetailsFunctions(populateDetailedLikedRecipes);
+        async.waterfall([
+          waterfallCallback => waterfallCallback(null, populateDetailedLikedRecipes),
+          ...mealDetailsFunctions,
+        ], autoCallback);
       } else {
         autoCallback(null, populateDetailedLikedRecipes);
       }
     }],
-    populateDetailedLunchRecipes: ['populateDetailedBreakfastRecipes', ({ populateDetailedBreakfastRecipes }, autoCallback) => {
-      if (
-        populateDetailedBreakfastRecipes &&
-        populateDetailedBreakfastRecipes.mealPlan && 
-        populateDetailedBreakfastRecipes.mealPlan.lunch && 
-        populateDetailedBreakfastRecipes.mealPlan.lunch.length !== 0
-      ) {
-        recipeModel.selectRecipesByIds(populateDetailedBreakfastRecipes.mealPlan.lunch, (err, lunchRecipes) => {
-          if (!err) {
-            populateDetailedBreakfastRecipes.mealPlan.lunch = lunchRecipes;
-          }
-          autoCallback(err, populateDetailedBreakfastRecipes);
-        });
-      } else {
-        autoCallback(null, populateDetailedBreakfastRecipes);
-      }
-    }],
-    populateDetailedDinnerRecipes: ['populateDetailedLunchRecipes', ({ populateDetailedLunchRecipes }, autoCallback) => {
-      if (
-        populateDetailedLunchRecipes &&
-        populateDetailedLunchRecipes.mealPlan && 
-        populateDetailedLunchRecipes.mealPlan.dinner && 
-        populateDetailedLunchRecipes.mealPlan.dinner.length !== 0
-      ) {
-        recipeModel.selectRecipesByIds(populateDetailedLunchRecipes.mealPlan.dinner, (err, dinnerRecipes) => {
-          if (!err) {
-            populateDetailedLunchRecipes.mealPlan.dinner = dinnerRecipes;
-          }
-          autoCallback(err, populateDetailedLunchRecipes);
-        });
-      } else {
-        autoCallback(null, populateDetailedLunchRecipes);
-      }
-    }],
-  }, (err, { populateDetailedDinnerRecipes }) => {
-    res.status(err ? 500 : 200).json(err ? null : populateDetailedDinnerRecipes);
+  }, (err, { populateDetailedMealRecipes }) => {
+    res.status(err ? 500 : 200).json(err ? null : populateDetailedMealRecipes);
   });
 };
 
