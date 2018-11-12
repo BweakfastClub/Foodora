@@ -52,6 +52,14 @@ module.exports.getTopRecipes = (req, res) => {
   });
 };
 
+module.exports.getRandomRecipes = ({ query: { recipes } }, res) => {
+  const numberOfRecipes = parseInt(recipes, 10);
+  recipesModel.getRandomRecipes(numberOfRecipes, (getRandomRecipesErr, randomRecipes) => {
+    res.status(getRandomRecipesErr ? 500 : 200)
+      .json(getRandomRecipesErr ? null : randomRecipes);
+  });
+};
+
 module.exports.callPythonScriptTest = (req, res) => {
   const pythonProcess = spawn('python', ['test_script.py']);
 

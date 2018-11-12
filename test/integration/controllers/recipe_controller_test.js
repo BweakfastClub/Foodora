@@ -113,6 +113,44 @@ describe('Endpoints exists for recipes', () => {
     });
   });
 
+  describe('/Get random recipes', () => {
+    it('gets 1 random recipes', (done) => {
+      chai.request(routes)
+        .get('/recipes/random?recipes=1')
+        .end((err, res) => {
+          should.not.exist(err);
+          res.should.have.status(200);
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.equal(1);
+          done();
+        });
+    });
+
+    it('gets 10 random recipes', (done) => {
+      chai.request(routes)
+        .get('/recipes/random?recipes=10')
+        .end((err, res) => {
+          should.not.exist(err);
+          res.should.have.status(200);
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.equal(10);
+          done();
+        });
+    });
+
+    it('gets 50 random recipes', (done) => {
+      chai.request(routes)
+        .get('/recipes/random?recipes=50')
+        .end((err, res) => {
+          should.not.exist(err);
+          res.should.have.status(200);
+          expect(res.body).to.be.an('array');
+          expect(res.body.length).to.equal(50);
+          done();
+        });
+    });
+  });
+
   describe('/GET top recipes', () => {
     it('gets 8 random recipes as suggestion if there are not 8 top liked recipes', (done) => {
       chai.request(routes)
