@@ -64,6 +64,24 @@ module.exports.login = ({ body: { email = null, password = null } }, res) => {
   }
 };
 
+const buildMealDetailsFunctions = (populateDetailedLikedRecipes) => {
+  return Object.keys(populateDetailedLikedRecipes.mealPlan).map((meal) => {
+    return (userInfoBeingBuilt, waterfallCallback) => {
+      if (meal && meal.length !== 0) {
+        recipeModel.selectRecipesByIds(
+          userInfoBeingBuilt.mealPlan[meal],
+          (err, recipesDetails) => {
+            if (!err) {
+              userInfoBeingBuilt.mealPlan[meal] = recipesDetails;
+            }
+            waterfallCallback(err, userInfoBeingBuilt);
+          },
+        );
+      }
+    };
+  });
+};
+
 module.exports.getUserInfo = ({ headers: { token } }, res) => {
   async.auto({
     verifyToken: autoCallback => usersModel.verifyToken(token, autoCallback),
@@ -71,7 +89,7 @@ module.exports.getUserInfo = ({ headers: { token } }, res) => {
       usersModel.getUserInfo(email, autoCallback);
     }],
     populateDetailedLikedRecipes: ['getUserInfo', ({ getUserInfo }, autoCallback) => {
-      if (getUserInfo.likedRecipes && getUserInfo.likedRecipes.length !== 0) {
+      if (getUserInfo && getUserInfo.likedRecipes && getUserInfo.likedRecipes.length !== 0) {
         recipeModel.selectRecipesByIds(getUserInfo.likedRecipes, (err, likedRecipes) => {
           autoCallback(err, err ? getUserInfo : { ...getUserInfo, likedRecipes });
         });
@@ -79,8 +97,22 @@ module.exports.getUserInfo = ({ headers: { token } }, res) => {
         autoCallback(null, getUserInfo);
       }
     }],
-  }, (err, { populateDetailedLikedRecipes }) => {
-    res.status(err ? 500 : 200).json(err ? null : populateDetailedLikedRecipes);
+    populateDetailedMealRecipes: ['populateDetailedLikedRecipes', ({ populateDetailedLikedRecipes }, autoCallback) => {
+      if (
+        populateDetailedLikedRecipes
+        && populateDetailedLikedRecipes.mealPlan
+      ) {
+        const mealDetailsFunctions = buildMealDetailsFunctions(populateDetailedLikedRecipes);
+        async.waterfall([
+          waterfallCallback => waterfallCallback(null, populateDetailedLikedRecipes),
+          ...mealDetailsFunctions,
+        ], autoCallback);
+      } else {
+        autoCallback(null, populateDetailedLikedRecipes);
+      }
+    }],
+  }, (err, { populateDetailedMealRecipes }) => {
+    res.status(err ? 500 : 200).json(err ? null : populateDetailedMealRecipes);
   });
 };
 
