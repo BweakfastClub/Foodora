@@ -1,3 +1,5 @@
+[Documentation for the API](https://documenter.getpostman.com/view/5738231/RzZ3K24u)
+
 To setup mongo with docker:
 ```bash
 docker pull mongo
