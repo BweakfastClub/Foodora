@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const fs = require('fs');
+const async = require('async');
 const recipesModel = require('../models/recipes_model');
 const usersModel = require('../models/users_model');
 
@@ -12,14 +13,123 @@ module.exports.setUp = (data, callback) => {
   recipesModel.setup(data, callback);
 };
 
-module.exports.selectRecipesByIds = (req, res) => {
-  let { ids } = req.query;
-  ids = ids ? ids.split(',') : [];
-  ids = ids.map(id => parseInt(id, 10));
+const verifyToken = (token, res, callback) => {
+  usersModel.verifyToken(token, (tokenErr, decodedToken) => {
+    if (tokenErr) {
+      return res.status(401).json({
+        error: 'Invalid or Missing Token, please include a valid token in the header',
+      });
+    }
 
-  recipesModel.selectRecipesByIds(ids, (err, result) => {
-    res.status(err ? 500 : 200).json(err ? undefined : result);
+    return callback(null, decodedToken);
   });
+};
+
+const populateUserSpecificInfoOnRecipes = (token, recipes, res, callback) => {
+  async.auto({
+    verifyToken: autoCallback => verifyToken(token, res, autoCallback),
+    getUserInfo: ['verifyToken', ({ verifyToken: { email } }, autoCallback) => {
+      usersModel.getUserInfo(email, autoCallback);
+    }],
+    populateUserInfoOnRecipe: ['getUserInfo', ({ getUserInfo: { mealPlan, likedRecipes } }, autoCallback) => {
+      const recipesWithUserInfo = recipes.map((recipe) => {
+        const userMealPlan = {};
+        if (mealPlan && mealPlan.length !== 0) {
+          Object.keys(mealPlan).map((meal) => {
+            userMealPlan[meal] = new Set(mealPlan[meal]).has(recipe.id);
+          });
+        }
+        const userSpecificInformation = {
+          mealPlan: userMealPlan,
+          likedRecipes: new Set(likedRecipes).has(recipe.id),
+        };
+        return { ...recipe, userSpecificInformation };
+      });
+      autoCallback(null, recipesWithUserInfo);
+    }],
+  }, (err, { populateUserInfoOnRecipe }) => {
+    callback(err, populateUserInfoOnRecipe);
+  });
+};
+
+module.exports.selectRecipeById = ({ params: { recipeId = null }, headers: { token } }, res) => {
+  if (recipeId === null) {
+    return res.status(400).json('Please enter the recipe Id');
+  }
+  return recipesModel.selectRecipeById(recipeId, (err, recipe) => {
+    if (token && !err) {
+      populateUserSpecificInfoOnRecipes(
+        token,
+        [recipe],
+        res,
+        (userSpecificInfoErr, recipesWithUserSpecificInfo) => {
+          res.status(userSpecificInfoErr ? 500 : 200)
+            .json(userSpecificInfoErr ? null : recipesWithUserSpecificInfo[0]);
+        },
+      );
+    } else {
+      res.status(err ? 500 : 200).json(err ? null : recipe);
+    }
+  });
+};
+
+const selectRecipesByIds = (ids, token, res, callback) => {
+  recipesModel.selectRecipesByIds(ids, (err, recipes) => {
+    if (token && !err) {
+      populateUserSpecificInfoOnRecipes(
+        token,
+        recipes,
+        res,
+        callback,
+      );
+    } else {
+      callback(err, recipes);
+    }
+  });
+};
+
+const getRandomRecipes = (numberOfRecipes, token, res, callback) => {
+  recipesModel.getRandomRecipes(numberOfRecipes, (getRandomRecipesErr, randomRecipes) => {
+    if (token && !getRandomRecipesErr) {
+      populateUserSpecificInfoOnRecipes(
+        token,
+        randomRecipes,
+        res,
+        callback,
+      );
+    } else {
+      callback(getRandomRecipesErr, randomRecipes);
+    }
+  });
+};
+
+const selectAllRecipes = (token, res, callback) => {
+  recipesModel.selectAllRecipes((selectAllRecipesErr, recipes) => {
+    if (token && !selectAllRecipesErr) {
+      populateUserSpecificInfoOnRecipes(
+        token,
+        recipes,
+        res,
+        callback,
+      );
+    } else {
+      callback(selectAllRecipesErr, recipes);
+    }
+  });
+};
+
+module.exports.selectRecipesByIds = ({ query: { ids = null }, headers: { token } }, res) => {
+  let idsList = ids ? ids.split(',') : [];
+  idsList = idsList.map(id => parseInt(id, 10));
+  if (idsList.length === 0) {
+    selectAllRecipes(token, res, (err, recipes) => {
+      res.status(err ? 500 : 200).json(err ? null : recipes);
+    });
+  } else {
+    selectRecipesByIds(idsList, token, res, (err, recipes) => {
+      res.status(err ? 500 : 200).json(err ? null : recipes);
+    });
+  }
 };
 
 module.exports.searchRecipes = ({ body: { query = null } }, res) => {
@@ -28,7 +138,7 @@ module.exports.searchRecipes = ({ body: { query = null } }, res) => {
   });
 };
 
-module.exports.getTopRecipes = (req, res) => {
+module.exports.getTopRecipes = ({ headers: { token } }, res) => {
   const numberOfRecipes = 8;
   usersModel.countLikedRecipes((err, recipes) => {
     if (!err && Object.keys(recipes).length >= numberOfRecipes) {
@@ -37,14 +147,11 @@ module.exports.getTopRecipes = (req, res) => {
       );
       let topRecipesIds = keysSorted.slice(0, numberOfRecipes);
       topRecipesIds = topRecipesIds.map(recipeId => parseInt(recipeId, 10));
-      recipesModel.selectRecipesByIds(
-        topRecipesIds,
-        (selectRecipeErr, topRecipes) => {
-          res.status(selectRecipeErr ? 500 : 200).json(selectRecipeErr ? null : topRecipes);
-        },
-      );
+      selectRecipesByIds(topRecipesIds, token, res, (topRecipeErr, topRecipes) => {
+        res.status(topRecipeErr ? 500 : 200).json(topRecipeErr ? null : topRecipes);
+      });
     } else {
-      recipesModel.getRandomRecipes(numberOfRecipes, (getRandomRecipesErr, randomRecipes) => {
+      getRandomRecipes(numberOfRecipes, token, res, (getRandomRecipesErr, randomRecipes) => {
         res.status(getRandomRecipesErr ? 500 : 200)
           .json(getRandomRecipesErr ? null : randomRecipes);
       });
@@ -52,11 +159,10 @@ module.exports.getTopRecipes = (req, res) => {
   });
 };
 
-module.exports.getRandomRecipes = ({ query: { recipes } }, res) => {
+module.exports.getRandomRecipes = ({ query: { recipes }, headers: { token } }, res) => {
   const numberOfRecipes = parseInt(recipes, 10);
-  recipesModel.getRandomRecipes(numberOfRecipes, (getRandomRecipesErr, randomRecipes) => {
-    res.status(getRandomRecipesErr ? 500 : 200)
-      .json(getRandomRecipesErr ? null : randomRecipes);
+  getRandomRecipes(numberOfRecipes, token, res, (err, randomRecipes) => {
+    res.status(err ? 500 : 200).json(err ? null : randomRecipes);
   });
 };
 
@@ -68,15 +174,6 @@ module.exports.callPythonScriptTest = (req, res) => {
   });
 };
 
-module.exports.selectRecipeById = ({ params: { recipeId = null } }, res) => {
-  if (recipeId === null) {
-    return res.status(400).json('Please enter the recipe Id');
-  }
-
-  return recipesModel.selectRecipeById(recipeId, (err, result) => {
-    res.status(err ? 500 : 200).json(err ? undefined : result);
-  });
-};
 
 module.exports.processRecipesJson = (req, res) => {
   const rawRecipeData = fs.readFileSync('data/recipes/recipes.json');

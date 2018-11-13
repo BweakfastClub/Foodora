@@ -15,7 +15,6 @@ const selectRecipeById = (client, collection, id, next) => {
   });
 };
 
-
 module.exports.selectRecipeById = (id, callback) => {
   async.waterfall([
     connect,
@@ -25,6 +24,20 @@ module.exports.selectRecipeById = (id, callback) => {
 
 const selectAllRecipes = (collection, callback) => {
   collection.find({}).toArray(callback);
+};
+
+module.exports.selectAllRecipes = (callback) => {
+  async.auto({
+    connect,
+    selectAllRecipes: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      selectAllRecipes(collection, autoCallback);
+    }],
+    closeClient: ['connect', 'selectAllRecipes', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => callback(err, results.selectAllRecipes));
 };
 
 const selectRecipesByIds = (collection, ids, callback) => {
