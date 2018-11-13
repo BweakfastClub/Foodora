@@ -57,7 +57,7 @@ module.exports.selectRecipeById = ({ params: { recipeId = null }, headers: { tok
     return res.status(400).json('Please enter the recipe Id');
   }
   return recipesModel.selectRecipeById(recipeId, (err, recipe) => {
-    if (token && !err) {
+    if (token && !err && recipe != null) {
       populateUserSpecificInfoOnRecipes(
         token,
         [recipe],

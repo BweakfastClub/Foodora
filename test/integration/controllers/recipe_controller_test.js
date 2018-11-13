@@ -146,6 +146,47 @@ describe('Endpoints exists for recipes', () => {
           done();
         });
     });
+
+    it('get recipe by Id should return null for non existing recipe', (done) => {
+      chai.request(routes)
+        .get('/recipes/id/0')
+        .end((err, res) => {
+          res.should.have.status(200);
+          should.not.exist(err);
+          should.not.exist(res.body);
+          done();
+        });
+    });
+
+    it('the get recipes by Id should return null for non existing recipe for logged in user', (done) => {
+      async.auto(
+        {
+          userRegister: autoCallback => chai.request(routes)
+            .post('/users')
+            .set('content-type', 'application/json')
+            .send({
+              email: 'user@email.com',
+              name: 'user',
+              password: '1234',
+            })
+            .end(autoCallback),
+          getRecipeWithToken: [
+            'userRegister',
+            ({ userRegister: { body: { token } } }, autoCallback) => chai.request(routes)
+              .get('/recipes/id/0')
+              .set('token', token)
+              .end(autoCallback),
+          ],
+        },
+        (err, { getRecipeWithToken }) => {
+          should.not.exist(err);
+          getRecipeWithToken.should.have.status(200);
+          should.not.exist(getRecipeWithToken.body);
+          done();
+        },
+      );
+    });
+
     it('the get recipes endpoint should return a list of all available recipes with user information when token is provided', (done) => {
       async.auto(
         {
