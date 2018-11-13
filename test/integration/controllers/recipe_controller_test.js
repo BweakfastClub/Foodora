@@ -13,25 +13,60 @@ const { expect } = chai;
 chai.use(chaiHttp);
 
 describe('Endpoints exists for recipes', () => {
-  before((done) => {
+  beforeEach((done) => {
     userModel.setup(
-      recipeModel.setup(recipeData, done),
+      () => recipeModel.setup(recipeData, done),
     );
   });
 
-  after((done) => {
-    recipeModel.clean(done);
+  afterEach((done) => {
+    userModel.clean(
+      () => recipeModel.clean(done),
+    );
   });
 
   describe('/GET recipes', () => {
-    it('the get recipes endpoint should exist', (done) => {
+    it('the get recipes endpoint should return a list of all available recipes', (done) => {
       chai.request(routes)
         .get('/recipes')
         .end((err, res) => {
           should.not.exist(err);
           res.should.have.status(200);
+          res.body.should.be.a('array');
           done();
         });
+    });
+
+    it('the get recipes endpoint should return a list of all available recipes with user information when token is provided', (done) => {
+      async.auto(
+        {
+          userRegister: autoCallback => chai.request(routes)
+            .post('/users')
+            .set('content-type', 'application/json')
+            .send({
+              email: 'user@email.com',
+              name: 'user',
+              password: '1234',
+            })
+            .end(autoCallback),
+          getRecipesWithToken: [
+            'userRegister',
+            ({ userRegister: { body: { token } } }, autoCallback) => chai.request(routes)
+              .get('/recipes')
+              .set('token', token)
+              .end(autoCallback),
+          ],
+        },
+        (err, { getRecipesWithToken }) => {
+          should.not.exist(err);
+          getRecipesWithToken.should.have.status(200);
+          getRecipesWithToken.body.should.be.a('array');
+          getRecipesWithToken.body.forEach((recipe) => {
+            should.exist(recipe.userSpecificInformation);
+          });
+          done();
+        },
+      );
     });
   });
 
@@ -100,7 +135,7 @@ describe('Endpoints exists for recipes', () => {
     });
   });
 
-  describe('/GET recipes by Id', () => {
+  describe('/GET recipe by Id', () => {
     it('get recipe by Id should return an existing recipe', (done) => {
       chai.request(routes)
         .get('/recipes/id/25449')
@@ -110,6 +145,38 @@ describe('Endpoints exists for recipes', () => {
           expect(res.body.id).to.equal(25449);
           done();
         });
+    });
+    it('the get recipes endpoint should return a list of all available recipes with user information when token is provided', (done) => {
+      async.auto(
+        {
+          userRegister: autoCallback => chai.request(routes)
+            .post('/users')
+            .set('content-type', 'application/json')
+            .send({
+              email: 'user@email.com',
+              name: 'user',
+              password: '1234',
+            })
+            .end(autoCallback),
+          getRecipeWithToken: [
+            'userRegister',
+            ({ userRegister: { body: { token } } }, autoCallback) => chai.request(routes)
+              .get('/recipes/id/25449')
+              .set('token', token)
+              .end(autoCallback),
+          ],
+        },
+        (err, { getRecipeWithToken }) => {
+          should.not.exist(err);
+          getRecipeWithToken.should.have.status(200);
+          expect(getRecipeWithToken.body.id).to.equal(25449);
+          should.exist(getRecipeWithToken.body.userSpecificInformation);
+          expect(getRecipeWithToken.body.userSpecificInformation.likedRecipes).to.equal(false);
+          /* eslint-disable no-unused-expressions */
+          expect(getRecipeWithToken.body.userSpecificInformation.mealPlan).to.be.empty;
+          done();
+        },
+      );
     });
   });
 
