@@ -143,6 +143,22 @@ describe('Endpoint tests', () => {
       usersModel.clean(done);
     });
 
+    it('logs in succesfully for existing users and issues a token', (done) => {
+      chai.request(usersRoutes)
+        .post('/users/login')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'user@email.com',
+          password: '1234',
+        })
+        .end((loginErr, loginRes) => {
+          should.not.exist(loginErr);
+          loginRes.should.have.status(200);
+          should.exist(loginRes.body.token);
+          done();
+        });
+    });
+
     it('logs in succesfully after user registration and issues a token', (done) => {
       chai.request(usersRoutes)
         .post('/users')

@@ -112,6 +112,27 @@ describe('Endpoints exists for recipes', () => {
         });
     });
 
+    it('should return a list of recipes with empty keyword search', (done) => {
+      chai.request(routes)
+        .post('/recipes/search')
+        .set('content-type', 'application/json')
+        .send({
+          query: {
+            $text: {
+              $search: '',
+            },
+          },
+        })
+        .end((err, res) => {
+          should.not.exist(err);
+          res.should.have.status(200);
+          res.body.should.be.a('array');
+          // eslint-disable-next-line no-unused-expressions
+          expect(res.body).to.be.empty;
+          done();
+        });
+    });
+
     it('should return a list of recipes with caloric filter', (done) => {
       chai.request(routes)
         .post('/recipes/search')

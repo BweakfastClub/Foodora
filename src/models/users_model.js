@@ -44,11 +44,11 @@ module.exports.countLikedRecipes = (callback) => {
 };
 
 const deleteUser = (collection, userInfo, callback) => {
-  collection.remove({ email: userInfo.email }, (err, result) => {
+  collection.remove({ email: userInfo.email }, (err) => {
     if (err) {
       return callback(err, null);
     }
-    return callback(result, { userInfo });
+    return callback(err, { userInfo });
   });
 };
 

@@ -8,7 +8,7 @@
     "lint-fix": "./node_modules/.bin/eslint --fix \"**/*.js\"",
     "test": "npm run integration-test && npm run unit-test",
     "integration-test": "cross-env NODE_ENV=testing nyc --reporter=html --reporter=text ./node_modules/mocha/bin/mocha \"./test/integration\" --recursive --exit",
-    "unit-test": "cross-env NODE_ENV=testing jest --detectOpenHandles --forceExit ",
+    "unit-test": "cross-env NODE_ENV=testing nyc --reporter=html --reporter=text jest --detectOpenHandles --forceExit ",
     "coverage": "nyc report coveralls"
   },
   "author": "",
