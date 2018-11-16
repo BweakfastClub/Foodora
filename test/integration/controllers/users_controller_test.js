@@ -1066,7 +1066,40 @@ describe('Endpoint tests', () => {
       });
     });
 
-    it('removes a recipe from breakfast successfully', (done) => {
+    it('removes all recipes from breakfast successfully', (done) => {
+      async.auto({
+        addRecipeToBreakfast: callback => chai.request(usersRoutes)
+          .post('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [241000, 237835] })
+          .end(callback),
+        removeRecipeFromBreakfast: ['addRecipeToBreakfast', (results, callback) => chai.request(usersRoutes)
+          .delete('/users/meal_plan')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ breakfast: [241000, 237835] })
+          .end(callback)],
+        getUserInfo: ['removeRecipeFromBreakfast', (results, callback) => chai.request(usersRoutes)
+          .get('/users/user_info')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { addRecipeToBreakfast, removeRecipeFromBreakfast, getUserInfo }) => {
+        should.not.exist(err);
+        addRecipeToBreakfast.should.have.status(200);
+        removeRecipeFromBreakfast.should.have.status(200);
+        getUserInfo.should.have.status(200);
+
+        const breakfastRecipeIds = getUserInfo.body.mealPlan.breakfast.map(recipe => recipe.id);
+
+        expect(breakfastRecipeIds).to.not.have.members([241000, 237835]);
+        expect(breakfastRecipeIds).to.deep.equal([]);
+        done();
+      });
+    });
+
+    it('removes recipes from breakfast successfully', (done) => {
       async.auto({
         addRecipeToBreakfast: callback => chai.request(usersRoutes)
           .post('/users/meal_plan')

@@ -49,11 +49,7 @@ module.exports.selectRecipesByIds = (ids, callback) => {
     connect,
     selectRecipesByIds: ['connect', (results, autoCallback) => {
       const collection = results.connect[1];
-      if (ids.length === 0) {
-        selectAllRecipes(collection, autoCallback);
-      } else {
-        selectRecipesByIds(collection, ids, autoCallback);
-      }
+      selectRecipesByIds(collection, ids, autoCallback);
     }],
     closeClient: ['connect', 'selectRecipesByIds', (results, autoCallback) => {
       const client = results.connect[0];
