@@ -9,4 +9,4 @@ config:
 scenarios:
   - flow:
     - get:
-        url: "/recipes/id/5beca9968d94d447f4de2cb1"
+        url: "/recipes/id/25449"

@@ -44,6 +44,9 @@ cmake-build-debug/
 # JIRA plugin
 atlassian-ide-plugin.xml
 
+# Code Settings
+.idea/codeStyleSettings.xml
+
 # Cursive Clojure plugin
 .idea/replstate.xml
 
