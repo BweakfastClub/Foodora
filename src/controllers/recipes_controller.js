@@ -197,7 +197,7 @@ module.exports.recommendRecipe = ({ params: { recipeId = null } }, res) => {
     return res.status(400).json('Please enter the recipe Id');
   }
 
-  return recipesModel.recommendRecipe(recipeId, (err, recipes) => {
+  return recipesModel.recommendRecipes([recipeId], (err, recipes) => {
     res.status(err ? 500 : 200).json(recipes);
   });
 };

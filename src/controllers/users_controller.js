@@ -242,16 +242,6 @@ module.exports.removeRecipesFromMealPlan = (
   ], err => res.status(err ? 500 : 200).json(err || undefined));
 };
 
-const getRecommendedRecipesByIdFunctions = (likedRecipes) => {
-  const recommendRecipeFunctions = {};
-  likedRecipes.map((likedRecipe) => {
-    recommendRecipeFunctions[likedRecipe] = (callback) => {
-      recipesModel.recommendRecipe(likedRecipe, callback);
-    };
-  });
-  return recommendRecipeFunctions;
-};
-
 module.exports.getRecommendedRecipes = ({ query: { recipes }, headers: { token } }, res) => {
   const numberOfRecipes = parseInt(recipes, 10);
 
@@ -261,21 +251,21 @@ module.exports.getRecommendedRecipes = ({ query: { recipes }, headers: { token }
       usersModel.getLikedRecipes(email, autoCallback);
     }],
     getRecommendedRecipesByIds: ['getLikedRecipes', (results, autoCallback) => {
-      const recommendRecipeFunctions = getRecommendedRecipesByIdFunctions(results.getLikedRecipes);
-      async.parallel(recommendRecipeFunctions, (err, recommendedRecipesByObject) => {
-        const recommendedRecipes = Object.keys(recommendedRecipesByObject)
-          .reduce((accumulator, recipe) => {
-            return [...accumulator, ...recommendedRecipesByObject[recipe]];
-          }, []);
-        autoCallback(
-          err,
-          numberOfRecipes
-            ? _.sampleSize(recommendedRecipes, numberOfRecipes)
-            : recommendedRecipes,
-        );
-      });
+      recipesModel.recommendRecipes(results.getLikedRecipes, autoCallback);
     }],
-  }, (err, { getRecommendedRecipesByIds }) => {
-    res.status(err ? 500 : 200).json(err ? null : getRecommendedRecipesByIds);
+    generateRandomRecommendations: ['getRecommendedRecipesByIds', ({ getRecommendedRecipesByIds }, autoCallback) => {
+      const recommendedRecipes = Object.keys(getRecommendedRecipesByIds)
+        .reduce((accumulator, recipe) => {
+          return [...accumulator, ...getRecommendedRecipesByIds[recipe]];
+        }, []);
+      autoCallback(
+        null,
+        numberOfRecipes
+          ? _.sampleSize(recommendedRecipes, numberOfRecipes)
+          : recommendedRecipes,
+      );
+    }],
+  }, (err, { generateRandomRecommendations }) => {
+    res.status(err ? 500 : 200).json(err ? null : generateRandomRecommendations);
   });
 };

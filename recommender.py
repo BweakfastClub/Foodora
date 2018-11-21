@@ -18,9 +18,18 @@ def main():
 		ingredients_as_list = process_recipes(json_data)
 		pickle.dump(ingredients_as_list, open("tree.p", "wb"))
 	elif mode == "RECOMMEND":
-		recipe_id = int(sys.argv[2])
+		recipe_ids_string = sys.argv[2]
+		recipe_ids = recipe_ids_string.split(',')
+		recipe_ids = [int(recipe_id) for recipe_id in recipe_ids]
 		ingredients_as_list = pickle.load(open("tree.p", "rb"))
-		print(recommend_recipes_by_ingredients(recipe_id, 6, ingredients_as_list))
+		kdt = KDTree(ingredients_as_list) 
+
+		print('{')
+		for index, recipe_id in enumerate(recipe_ids):
+			print('"'+str(recipe_id)+'"', ":", recommend_recipes_by_ingredients(recipe_id, 6, kdt, ingredients_as_list))
+			if index != len(recipe_ids)-1:
+				print(',')
+		print('}')
 
 def process_recipes(recipe_data):
    	recipe_data_frame = pandas.read_json(recipe_data)
@@ -47,8 +56,7 @@ def ingredients_encoded(recipe_data_frame):
 	return dataFrames
 
 
-def recommend_recipes_by_ingredients(recipe_id, number_of_recommendations, ingredients_data_frame):
-	kdt = KDTree(ingredients_data_frame)
+def recommend_recipes_by_ingredients(recipe_id, number_of_recommendations, kdt, ingredients_data_frame):
 	#we query for number_of_recommendations + 1 since it returns itself as the closest recipe - thus removing that from the recommendation
 	recommendations = kdt.query([ingredients_data_frame.loc[recipe_id]], number_of_recommendations+1, return_distance=False)
 	# the 0th index access in recommendations[0] is required since the query takes a 2d array, however, in this case, we only needed a single recommendation. 

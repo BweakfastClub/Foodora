@@ -154,11 +154,11 @@ module.exports.setup = (data, callback) => {
   }, callback);
 };
 
-module.exports.recommendRecipe = (recipeId, callback) => {
+module.exports.recommendRecipes = (recipeIds, callback) => {
   const pythonProcess = spawn('python', [
     'recommender.py',
     PYTHON_MODES.RECOMMEND,
-    recipeId,
+    recipeIds.toString(),
   ]);
 
   let dataString = '';
@@ -173,6 +173,9 @@ module.exports.recommendRecipe = (recipeId, callback) => {
   });
 
   pythonProcess.stdout.on('end', () => {
-    callback(recommendRecipeError, recommendRecipeError ? null : JSON.parse(dataString));
+    callback(
+      recommendRecipeError,
+      recommendRecipeError || JSON.parse(dataString),
+    );
   });
 };
