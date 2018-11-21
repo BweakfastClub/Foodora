@@ -257,10 +257,11 @@ module.exports.getRecommendedRecipes = ({ query: { recipes }, headers: { token }
       recipesModel.recommendRecipes(results.getLikedRecipes, autoCallback);
     }],
     generateRandomRecommendations: ['getRecommendedRecipesByIds', ({ getRecommendedRecipesByIds }, autoCallback) => {
-      const recommendedRecipes = Object.keys(getRecommendedRecipesByIds)
+      let recommendedRecipes = Object.keys(getRecommendedRecipesByIds)
         .reduce((accumulator, recipe) => {
           return [...accumulator, ...getRecommendedRecipesByIds[recipe]];
         }, []);
+      recommendedRecipes = [...new Set(recommendedRecipes)];
       autoCallback(
         null,
         _.sampleSize(recommendedRecipes, numberOfRecipes),

@@ -1280,4 +1280,74 @@ describe('Endpoint tests', () => {
       });
     });
   });
+
+  describe('liked recipes tests', () => {
+    let userToken = null;
+
+    beforeEach((done) => {
+      chai.request(usersRoutes)
+        .post('/users')
+        .set('content-type', 'application/json')
+        .send({
+          email: 'user@email.com',
+          name: 'user',
+          password: '1234',
+        })
+        .end((err, registerRes) => {
+          should.not.exist(err);
+          registerRes.should.have.status(200);
+          should.exist(registerRes.body.token);
+          userToken = registerRes.body.token;
+          done();
+        });
+    });
+
+    afterEach((done) => {
+      usersModel.clean(done);
+    });
+
+    it('it should generate 10 recommendations when possible from liked recipes', (done) => {
+      async.auto({
+        likeRecipes: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [68461, 15184, 20669, 24643] })
+          .end(callback),
+        getRecommendedRecipes: ['likeRecipes', (results, callback) => chai.request(usersRoutes)
+          .get('/users/recommended_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { likeRecipes, getRecommendedRecipes }) => {
+        should.not.exist(err);
+        expect(likeRecipes.should.have.status(200));
+        expect(getRecommendedRecipes.should.have.status(200));
+        expect(getRecommendedRecipes.body.length).to.equal(10);
+        done();
+      });
+    });
+
+    it('it should generate the specified number of recommendations when possible from liked recipes', (done) => {
+      async.auto({
+        likeRecipes: callback => chai.request(usersRoutes)
+          .post('/users/liked_recipes')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .send({ recipeIds: [68461, 15184, 20669, 24643] })
+          .end(callback),
+        getRecommendedRecipes: ['likeRecipes', (results, callback) => chai.request(usersRoutes)
+          .get('/users/recommended_recipes?recipes=15')
+          .set('content-type', 'application/json')
+          .set('token', userToken)
+          .end(callback)],
+      }, (err, { likeRecipes, getRecommendedRecipes }) => {
+        should.not.exist(err);
+        expect(likeRecipes.should.have.status(200));
+        expect(getRecommendedRecipes.should.have.status(200));
+        expect(getRecommendedRecipes.body.length).to.equal(15);
+        done();
+      });
+    });
+  });
 });
