@@ -1,6 +1,7 @@
 const async = require('async');
+const _ = require('lodash');
 const usersModel = require('../models/users_model');
-const recipeModel = require('../models/recipes_model');
+const recipesModel = require('../models/recipes_model');
 
 module.exports.setUp = () => {
   usersModel.setup();
@@ -68,7 +69,7 @@ const buildMealDetailsFunctions = (populateDetailedLikedRecipes) => {
   return Object.keys(populateDetailedLikedRecipes.mealPlan).map((meal) => {
     return (userInfoBeingBuilt, waterfallCallback) => {
       if (meal && meal.length !== 0) {
-        recipeModel.selectRecipesByIds(
+        recipesModel.selectRecipesByIds(
           userInfoBeingBuilt.mealPlan[meal],
           (err, recipesDetails) => {
             if (!err) {
@@ -90,7 +91,7 @@ module.exports.getUserInfo = ({ headers: { token } }, res) => {
     }],
     populateDetailedLikedRecipes: ['getUserInfo', ({ getUserInfo }, autoCallback) => {
       if (getUserInfo && getUserInfo.likedRecipes && getUserInfo.likedRecipes.length !== 0) {
-        recipeModel.selectRecipesByIds(getUserInfo.likedRecipes, (err, likedRecipes) => {
+        recipesModel.selectRecipesByIds(getUserInfo.likedRecipes, (err, likedRecipes) => {
           autoCallback(err, err ? getUserInfo : { ...getUserInfo, likedRecipes });
         });
       } else {
@@ -147,7 +148,7 @@ module.exports.changeUserInfo = (
 module.exports.likesRecipes = ({ body: { recipeIds }, headers: { token } }, res) => {
   async.auto({
     verifyToken: callback => verifyToken(token, res, callback),
-    filterRecipeIds: callback => recipeModel.filterRecipeIds(recipeIds, callback),
+    filterRecipeIds: callback => recipesModel.filterRecipeIds(recipeIds, callback),
     addRecipes: [
       'verifyToken',
       'filterRecipeIds',
@@ -184,7 +185,7 @@ const buildAddRecipesFunctions = (email, meals) => {
   Object.keys(meals).map((meal) => {
     if (meals[meal]) {
       addRecipesFunctions[meal] = waterfallCallback => async.waterfall([
-        innerCallback => recipeModel.filterRecipeIds(meals[meal], innerCallback),
+        innerCallback => recipesModel.filterRecipeIds(meals[meal], innerCallback),
         (filterRecipeIds, innerCallback) => {
           usersModel.addRecipesToMealPlan(email, meal, filterRecipeIds, innerCallback);
         },
@@ -239,4 +240,42 @@ module.exports.removeRecipesFromMealPlan = (
       async.parallel(removeRecipesFunctions, next);
     },
   ], err => res.status(err ? 500 : 200).json(err || undefined));
+};
+
+const getRecommendedRecipesByIdFunctions = (likedRecipes) => {
+  const recommendRecipeFunctions = {};
+  likedRecipes.map((likedRecipe) => {
+    recommendRecipeFunctions[likedRecipe] = (callback) => {
+      recipesModel.recommendRecipe(likedRecipe, callback);
+    };
+  });
+  return recommendRecipeFunctions;
+};
+
+module.exports.getRecommendedRecipes = ({ query: { recipes }, headers: { token } }, res) => {
+  const numberOfRecipes = parseInt(recipes, 10);
+
+  async.auto({
+    verifyToken: autoCallback => verifyToken(token, res, autoCallback),
+    getLikedRecipes: ['verifyToken', ({ verifyToken: { email } }, autoCallback) => {
+      usersModel.getLikedRecipes(email, autoCallback);
+    }],
+    getRecommendedRecipesByIds: ['getLikedRecipes', (results, autoCallback) => {
+      const recommendRecipeFunctions = getRecommendedRecipesByIdFunctions(results.getLikedRecipes);
+      async.parallel(recommendRecipeFunctions, (err, recommendedRecipesByObject) => {
+        const recommendedRecipes = Object.keys(recommendedRecipesByObject)
+          .reduce((accumulator, recipe) => {
+            return [...accumulator, ...recommendedRecipesByObject[recipe]];
+          }, []);
+        autoCallback(
+          err,
+          numberOfRecipes
+            ? _.sampleSize(recommendedRecipes, numberOfRecipes)
+            : recommendedRecipes,
+        );
+      });
+    }],
+  }, (err, { getRecommendedRecipesByIds }) => {
+    res.status(err ? 500 : 200).json(err ? null : getRecommendedRecipesByIds);
+  });
 };

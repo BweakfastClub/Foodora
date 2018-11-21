@@ -22,5 +22,5 @@ app.delete('/allergies', usersController.removeAllergies);
 app.post('/meal_plan', usersController.addRecipesToMealPlan);
 app.delete('/meal_plan', usersController.removeRecipesFromMealPlan);
 
-
+app.get('/recommended_recipes', usersController.getRecommendedRecipes);
 module.exports = app;

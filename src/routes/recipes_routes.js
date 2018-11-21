@@ -5,6 +5,7 @@ const data = require('../../data/recipes/recipes.json');
 
 if (env !== 'testing') {
   recipesController.setUp(data);
+  recipesController.processRecipesJson();
 }
 
 app.get('/', recipesController.selectRecipesByIds);

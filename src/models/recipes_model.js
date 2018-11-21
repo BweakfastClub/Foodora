@@ -1,7 +1,12 @@
-/* eslint-disable max-lines */
+const { spawn } = require('child_process');
 const async = require('async');
 const mongoClient = require('mongodb').MongoClient;
 const { env, url } = require('../../config');
+
+const PYTHON_MODES = {
+  PROCESS: 'PROCESS',
+  RECOMMEND: 'RECOMMEND',
+};
 
 const connect = (next) => {
   mongoClient.connect(url, (err, client) => {
@@ -147,4 +152,27 @@ module.exports.setup = (data, callback) => {
       client.close(autoCallback);
     }],
   }, callback);
+};
+
+module.exports.recommendRecipe = (recipeId, callback) => {
+  const pythonProcess = spawn('python', [
+    'recommender.py',
+    PYTHON_MODES.RECOMMEND,
+    recipeId,
+  ]);
+
+  let dataString = '';
+  let recommendRecipeError = null;
+
+  pythonProcess.stdout.on('data', (data) => {
+    dataString += data;
+  });
+
+  pythonProcess.stderr.on('data', (error) => {
+    recommendRecipeError = error;
+  });
+
+  pythonProcess.stdout.on('end', () => {
+    callback(recommendRecipeError, recommendRecipeError ? null : JSON.parse(dataString));
+  });
 };

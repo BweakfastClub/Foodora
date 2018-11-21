@@ -166,15 +166,6 @@ module.exports.getRandomRecipes = ({ query: { recipes }, headers: { token } }, r
   });
 };
 
-module.exports.callPythonScriptTest = (req, res) => {
-  const pythonProcess = spawn('python', ['test_script.py']);
-
-  pythonProcess.stdout.on('data', (data) => {
-    res.status(200).json(data.toString());
-  });
-};
-
-
 module.exports.processRecipesJson = (req, res) => {
   const rawRecipeData = fs.readFileSync('data/recipes/recipes.json');
   const recipes = JSON.parse(rawRecipeData);
@@ -190,44 +181,23 @@ module.exports.processRecipesJson = (req, res) => {
   pythonProcess.stdin.write(JSON.stringify(ingredientsList));
   pythonProcess.stdin.end();
 
-  let dataString = '';
-
-  pythonProcess.stdout.on('data', (data) => {
-    dataString += data;
-  });
-
   pythonProcess.stderr.on('data', (error) => {
     console.error(error.toString());
   });
 
   pythonProcess.stdout.on('end', () => {
-    res.status(200).json(dataString.toString());
+    if (res) {
+      res.status(200).json(null);
+    }
   });
 };
-
 
 module.exports.recommendRecipe = ({ params: { recipeId = null } }, res) => {
   if (recipeId === null) {
     return res.status(400).json('Please enter the recipe Id');
   }
 
-  const pythonProcess = spawn('python', [
-    'recommender.py',
-    PYTHON_MODES.RECOMMEND,
-    recipeId,
-  ]);
-
-  let dataString = '';
-
-  pythonProcess.stdout.on('data', (data) => {
-    dataString += data;
-  });
-
-  pythonProcess.stderr.on('data', (error) => {
-    console.error(error.toString());
-  });
-
-  return pythonProcess.stdout.on('end', () => {
-    res.status(200).json(JSON.parse(dataString.toString()));
+  return recipesModel.recommendRecipe(recipeId, (err, recipes) => {
+    res.status(err ? 500 : 200).json(recipes);
   });
 };
