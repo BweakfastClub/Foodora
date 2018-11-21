@@ -197,7 +197,14 @@ module.exports.recommendRecipe = ({ params: { recipeId = null } }, res) => {
     return res.status(400).json('Please enter the recipe Id');
   }
 
-  return recipesModel.recommendRecipes([recipeId], (err, recipes) => {
-    res.status(err ? 500 : 200).json(recipes);
+  return async.auto({
+    recommendRecipes: autoCallback => recipesModel.recommendRecipes([recipeId], (err, recipes) => {
+      autoCallback(err, recipes[recipeId]);
+    }),
+    generateRecipeDetails: ['recommendRecipes', ({ recommendRecipes }, autoCallback) => {
+      recipesModel.selectRecipesByIds(recommendRecipes, autoCallback);
+    }],
+  }, (err, { generateRecipeDetails }) => {
+    res.status(err ? 500 : 200).json(generateRecipeDetails);
   });
 };

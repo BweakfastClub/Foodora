@@ -243,7 +243,10 @@ module.exports.removeRecipesFromMealPlan = (
 };
 
 module.exports.getRecommendedRecipes = ({ query: { recipes }, headers: { token } }, res) => {
-  const numberOfRecipes = parseInt(recipes, 10);
+  let numberOfRecipes = 10;
+  if (recipes) {
+    numberOfRecipes = parseInt(recipes, 10);
+  }
 
   async.auto({
     verifyToken: autoCallback => verifyToken(token, res, autoCallback),
@@ -260,12 +263,13 @@ module.exports.getRecommendedRecipes = ({ query: { recipes }, headers: { token }
         }, []);
       autoCallback(
         null,
-        numberOfRecipes
-          ? _.sampleSize(recommendedRecipes, numberOfRecipes)
-          : recommendedRecipes,
+        _.sampleSize(recommendedRecipes, numberOfRecipes),
       );
     }],
-  }, (err, { generateRandomRecommendations }) => {
-    res.status(err ? 500 : 200).json(err ? null : generateRandomRecommendations);
+    generateRecipeDetail: ['generateRandomRecommendations', ({ generateRandomRecommendations }, autoCallback) => {
+      recipesModel.selectRecipesByIds(generateRandomRecommendations, autoCallback);
+    }],
+  }, (err, { generateRecipeDetail }) => {
+    res.status(err ? 500 : 200).json(err ? null : generateRecipeDetail);
   });
 };
