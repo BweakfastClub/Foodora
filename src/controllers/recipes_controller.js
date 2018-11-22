@@ -33,11 +33,14 @@ const populateUserSpecificInfoOnRecipes = (token, recipes, res, callback) => {
     }],
     populateUserInfoOnRecipe: ['getUserInfo', ({ getUserInfo: { mealPlan, likedRecipes } }, autoCallback) => {
       const recipesWithUserInfo = recipes.map((recipe) => {
-        const userMealPlan = {};
+        let userMealPlan = [];
         if (mealPlan && mealPlan.length !== 0) {
-          Object.keys(mealPlan).map((meal) => {
-            userMealPlan[meal] = new Set(mealPlan[meal]).has(recipe.id);
-          });
+          userMealPlan = Object.keys(mealPlan).reduce((accumulator, meal) => {
+            if (new Set(mealPlan[meal]).has(recipe.id)) {
+              return [...accumulator, meal];
+            }
+            return accumulator;
+          }, []);
         }
         const userSpecificInformation = {
           mealPlan: userMealPlan,
