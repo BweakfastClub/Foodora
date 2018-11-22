@@ -3,8 +3,9 @@ const chaiHttp = require('chai-http');
 const async = require('async');
 const recipesData = require('../../../data/recipes/recipes.json');
 const usersRoutes = require('../../../index');
-const usersModel = require('../../../src/models/users_model');
-const recipesModel = require('../../../src/models/recipes_model');
+const usersController = require('../../../src/controllers/users_controller');
+const recipesController = require('../../../src/controllers/recipes_controller');
+
 
 const should = chai.should();
 const { expect } = chai;
@@ -13,8 +14,8 @@ chai.use(chaiHttp);
 
 describe('Endpoint tests', () => {
   before((done) => {
-    usersModel.setup(
-      recipesModel.setup(recipesData, done),
+    usersController.setup(
+      recipesController.setup(recipesData, done),
     );
   });
 
@@ -38,7 +39,7 @@ describe('Endpoint tests', () => {
     });
 
     after((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('Post user requires name', (done) => {
@@ -140,7 +141,7 @@ describe('Endpoint tests', () => {
     });
 
     after((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('logs in succesfully after user registration and issues a token', (done) => {
@@ -207,7 +208,7 @@ describe('Endpoint tests', () => {
   describe('/DELETE users', () => {
     before((done) => {
       async.parallel({
-        userSetup: callback => usersModel.setup(callback),
+        userSetup: callback => usersController.setup(callback),
         addUser: callback => chai.request(usersRoutes)
           .post('/users')
           .set('content-type', 'application/json')
@@ -225,7 +226,7 @@ describe('Endpoint tests', () => {
     });
 
     after((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('Delete user require password', (done) => {
@@ -305,7 +306,7 @@ describe('Endpoint tests', () => {
     });
 
     afterEach((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('changing user info must include correct password', (done) => {
@@ -554,7 +555,7 @@ describe('Endpoint tests', () => {
     });
 
     afterEach((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('likes a recipe successfully', (done) => {
@@ -711,7 +712,7 @@ describe('Endpoint tests', () => {
     });
 
     afterEach((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('add an allergy successfully', (done) => {
@@ -826,7 +827,7 @@ describe('Endpoint tests', () => {
     });
 
     afterEach((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('adds recipes to the breakfast meal plan successfully', (done) => {
@@ -1303,7 +1304,7 @@ describe('Endpoint tests', () => {
     });
 
     afterEach((done) => {
-      usersModel.clean(done);
+      usersController.clean(done);
     });
 
     it('it should generate 10 recommendations when possible from liked recipes', (done) => {
@@ -1326,7 +1327,7 @@ describe('Endpoint tests', () => {
         expect(getRecommendedRecipes.body.length).to.equal(10);
         done();
       });
-    });
+    }).timeout(5000);
 
     it('it should generate the specified number of recommendations when possible from liked recipes', (done) => {
       async.auto({
@@ -1348,6 +1349,6 @@ describe('Endpoint tests', () => {
         expect(getRecommendedRecipes.body.length).to.equal(15);
         done();
       });
-    });
+    }).timeout(5000);
   });
 });

@@ -3,8 +3,12 @@ const _ = require('lodash');
 const usersModel = require('../models/users_model');
 const recipesModel = require('../models/recipes_model');
 
-module.exports.setUp = () => {
-  usersModel.setup();
+module.exports.setup = (callback) => {
+  usersModel.setup(callback);
+};
+
+module.exports.clean = (callback) => {
+  usersModel.clean(callback);
 };
 
 const verifyToken = (token, res, callback) => {

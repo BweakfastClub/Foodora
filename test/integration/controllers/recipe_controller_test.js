@@ -2,9 +2,9 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const async = require('async');
 const routes = require('../../../index');
-const userModel = require('../../../src/models/users_model');
 const recipeData = require('../../../data/tests/recipes/recipes.json');
-const recipeModel = require('../../../src/models/recipes_model');
+const usersController = require('../../../src/controllers/users_controller');
+const recipesController = require('../../../src/controllers/recipes_controller');
 
 
 const should = chai.should();
@@ -14,14 +14,14 @@ chai.use(chaiHttp);
 
 describe('Endpoints exists for recipes', () => {
   beforeEach((done) => {
-    userModel.setup(
-      () => recipeModel.setup(recipeData, done),
+    usersController.setup(
+      () => recipesController.setup(recipeData, done),
     );
   });
 
   afterEach((done) => {
-    userModel.clean(
-      () => recipeModel.clean(done),
+    usersController.clean(
+      () => recipesController.clean(done),
     );
   });
 

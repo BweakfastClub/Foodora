@@ -3,7 +3,7 @@ const usersController = require('../controllers/users_controller');
 const { env } = require('../../config');
 
 if (env !== 'testing') {
-  usersController.setUp();
+  usersController.setup();
 }
 
 app.get('/', usersController.findAllUsers);
