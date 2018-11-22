@@ -1,9 +1,16 @@
-language: node_js
+language: generic
+sudo: required
+before_install:
+  - npm install
+  - export NODE_ENV=testing
+install:
+  - pip install requests[security]
+  - pip install --user -r requirements.txt
 node_js:
   - '8'
-before_install:
-  - export NODE_ENV=testing
-sudo: required
+python:
+  - '2.7.15'
+  - '3.6'
 services:
   - mongodb
 script: 
