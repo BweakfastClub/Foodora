@@ -4,7 +4,7 @@ const { env } = require('../../config');
 const data = require('../../data/recipes/recipes.json');
 
 if (env !== 'testing') {
-  recipesController.setUp(data);
+  recipesController.setup(data);
 }
 
 app.get('/', recipesController.selectRecipesByIds);

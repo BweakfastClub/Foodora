@@ -3,7 +3,7 @@ const usersController = require('../controllers/users_controller');
 const { env } = require('../../config');
 
 if (env !== 'testing') {
-  usersController.setUp();
+  usersController.setup();
 }
 
 app.get('/', usersController.findAllUsers);
@@ -22,5 +22,5 @@ app.delete('/allergies', usersController.removeAllergies);
 app.post('/meal_plan', usersController.addRecipesToMealPlan);
 app.delete('/meal_plan', usersController.removeRecipesFromMealPlan);
 
-
+app.get('/recommended_recipes', usersController.getRecommendedRecipes);
 module.exports = app;

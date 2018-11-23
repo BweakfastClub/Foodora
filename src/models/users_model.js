@@ -265,6 +265,30 @@ module.exports.changeUserInfo = (email, password, name, callback) => {
   });
 };
 
+const getLikedRecipes = (collection, email, callback) => {
+  collection.findOne(
+    { email },
+    { projection: { likedRecipes: 1, _id: 0 } },
+    callback,
+  );
+};
+
+module.exports.getLikedRecipes = (email, callback) => {
+  async.auto({
+    connect,
+    getLikedRecipes: ['connect', (results, autoCallback) => {
+      const collection = results.connect[1];
+      getLikedRecipes(collection, email, autoCallback);
+    }],
+    closeClient: ['connect', 'getLikedRecipes', (results, autoCallback) => {
+      const client = results.connect[0];
+      client.close(autoCallback);
+    }],
+  }, (err, results) => {
+    callback(err, results.getLikedRecipes.likedRecipes ? results.getLikedRecipes.likedRecipes : []);
+  });
+};
+
 const likesRecipes = (collection, email, recipeIds, callback) => {
   collection.findOneAndUpdate(
     { email },

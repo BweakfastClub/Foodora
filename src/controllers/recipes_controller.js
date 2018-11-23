@@ -9,10 +9,48 @@ const PYTHON_MODES = {
   RECOMMEND: 'RECOMMEND',
 };
 
-module.exports.setUp = (data, callback) => {
-  recipesModel.setup(data, callback);
+const processRecipesJson = (recipes, callback) => {
+  const ingredientsList = recipes.map(({ id, ingredients }) => ({
+    id,
+    ingredients: ingredients.map(ingredient => ingredient.ingredientID),
+  }));
+
+
+  const pythonProcess = spawn('python', ['recommender.py', PYTHON_MODES.PROCESS]);
+
+  pythonProcess.stdin.write(JSON.stringify(ingredientsList));
+  pythonProcess.stdin.end();
+
+  let processError = null;
+  pythonProcess.stderr.on('data', (error) => {
+    processError = error;
+    console.error(error.toString());
+  });
+
+  pythonProcess.stdout.on('end', () => {
+    callback(processError);
+  });
 };
 
+module.exports.setup = (data, callback) => {
+  processRecipesJson(
+    data,
+    () => recipesModel.setup(data, callback),
+  );
+};
+
+module.exports.clean = (callback) => {
+  recipesModel.clean(callback);
+};
+
+module.exports.processRecipesJson = (req, res) => {
+  const rawRecipeData = fs.readFileSync('data/recipes/recipes.json');
+  const data = JSON.parse(rawRecipeData);
+
+  processRecipesJson(data, (err) => {
+    res.status(err ? 500 : 200).json(null);
+  });
+};
 const verifyToken = (token, res, callback) => {
   usersModel.verifyToken(token, (tokenErr, decodedToken) => {
     if (tokenErr) {
@@ -166,68 +204,20 @@ module.exports.getRandomRecipes = ({ query: { recipes }, headers: { token } }, r
   });
 };
 
-module.exports.callPythonScriptTest = (req, res) => {
-  const pythonProcess = spawn('python', ['test_script.py']);
-
-  pythonProcess.stdout.on('data', (data) => {
-    res.status(200).json(data.toString());
-  });
-};
-
-
-module.exports.processRecipesJson = (req, res) => {
-  const rawRecipeData = fs.readFileSync('data/recipes/recipes.json');
-  const recipes = JSON.parse(rawRecipeData);
-
-  const ingredientsList = recipes.map(({ id, ingredients }) => ({
-    id,
-    ingredients: ingredients.map(ingredient => ingredient.ingredientID),
-  }));
-
-
-  const pythonProcess = spawn('python', ['recommender.py', PYTHON_MODES.PROCESS]);
-
-  pythonProcess.stdin.write(JSON.stringify(ingredientsList));
-  pythonProcess.stdin.end();
-
-  let dataString = '';
-
-  pythonProcess.stdout.on('data', (data) => {
-    dataString += data;
-  });
-
-  pythonProcess.stderr.on('data', (error) => {
-    console.error(error.toString());
-  });
-
-  pythonProcess.stdout.on('end', () => {
-    res.status(200).json(dataString.toString());
-  });
-};
-
 
 module.exports.recommendRecipe = ({ params: { recipeId = null } }, res) => {
   if (recipeId === null) {
     return res.status(400).json('Please enter the recipe Id');
   }
 
-  const pythonProcess = spawn('python', [
-    'recommender.py',
-    PYTHON_MODES.RECOMMEND,
-    recipeId,
-  ]);
-
-  let dataString = '';
-
-  pythonProcess.stdout.on('data', (data) => {
-    dataString += data;
-  });
-
-  pythonProcess.stderr.on('data', (error) => {
-    console.error(error.toString());
-  });
-
-  return pythonProcess.stdout.on('end', () => {
-    res.status(200).json(JSON.parse(dataString.toString()));
+  return async.auto({
+    recommendRecipes: autoCallback => recipesModel.recommendRecipes([recipeId], (err, recipes) => {
+      autoCallback(err, recipes[recipeId]);
+    }),
+    generateRecipeDetails: ['recommendRecipes', ({ recommendRecipes }, autoCallback) => {
+      recipesModel.selectRecipesByIds(recommendRecipes, autoCallback);
+    }],
+  }, (err, { generateRecipeDetails }) => {
+    res.status(err ? 500 : 200).json(generateRecipeDetails);
   });
 };
