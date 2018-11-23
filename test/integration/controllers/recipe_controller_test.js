@@ -13,7 +13,8 @@ const { expect } = chai;
 chai.use(chaiHttp);
 
 describe('Endpoints exists for recipes', () => {
-  beforeEach((done) => {
+  beforeEach(function (done) {
+    this.timeout(5000);
     usersController.setup(
       () => recipesController.setup(recipeData, done),
     );

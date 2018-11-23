@@ -26,7 +26,8 @@ def main():
 
 		print('{')
 		for index, recipe_id in enumerate(recipe_ids):
-			print('"'+str(recipe_id)+'"', ":", recommend_recipes_by_ingredients(recipe_id, 6, kdt, ingredients_as_list))
+			print('"' + str(recipe_id) + '"' + ":")
+			print(recommend_recipes_by_ingredients(recipe_id, 6, kdt, ingredients_as_list))
 			if index != len(recipe_ids)-1:
 				print(',')
 		print('}')
