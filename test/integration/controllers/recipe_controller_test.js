@@ -13,17 +13,21 @@ const { expect } = chai;
 chai.use(chaiHttp);
 
 describe('Endpoints exists for recipes', () => {
-  beforeEach(function (done) {
+  before(function (done) {
     this.timeout(5000);
-    usersController.setup(
-      () => recipesController.setup(recipeData, done),
-    );
+    recipesController.setup(recipeData, done);
+  });
+
+  after((done) => {
+    recipesController.clean(done);
+  });
+
+  beforeEach((done) => {
+    usersController.setup(done);
   });
 
   afterEach((done) => {
-    usersController.clean(
-      () => recipesController.clean(done),
-    );
+    usersController.clean(done);
   });
 
   describe('/GET recipes', () => {

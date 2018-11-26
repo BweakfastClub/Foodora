@@ -155,27 +155,31 @@ module.exports.setup = (data, callback) => {
 };
 
 module.exports.recommendRecipes = (recipeIds, callback) => {
-  const pythonProcess = spawn('python', [
-    'recommender.py',
-    PYTHON_MODES.RECOMMEND,
-    recipeIds.toString(),
-  ]);
+  if (recipeIds.length === 0) {
+    callback(false, []);
+  } else {
+    const pythonProcess = spawn('python', [
+      'recommender.py',
+      PYTHON_MODES.RECOMMEND,
+      recipeIds.toString(),
+    ]);
 
-  let dataString = '';
-  let recommendRecipeError = null;
+    let dataString = '';
+    let recommendRecipeError = null;
 
-  pythonProcess.stdout.on('data', (data) => {
-    dataString += data;
-  });
+    pythonProcess.stdout.on('data', (data) => {
+      dataString += data;
+    });
 
-  pythonProcess.stderr.on('data', (error) => {
-    recommendRecipeError = error;
-  });
+    pythonProcess.stderr.on('data', (error) => {
+      recommendRecipeError = error;
+    });
 
-  pythonProcess.stdout.on('end', () => {
-    callback(
-      recommendRecipeError,
-      recommendRecipeError || JSON.parse(dataString),
-    );
-  });
+    pythonProcess.stdout.on('end', () => {
+      callback(
+        recommendRecipeError,
+        recommendRecipeError || JSON.parse(dataString),
+      );
+    });
+  }
 };
