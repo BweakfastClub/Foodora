@@ -7,7 +7,6 @@ const usersModel = rewire('../../../src/models/users_model');
 const storeUser = usersModel.__get__('storeUser');
 const deleteUser = usersModel.__get__('deleteUser');
 const likesRecipes = usersModel.__get__('likesRecipes');
-const unlikesRecipes = usersModel.__get__('unlikesRecipes');
 const countLikedRecipes = usersModel.__get__('countLikedRecipes');
 const selectAllUsers = usersModel.__get__('selectAllUsers');
 const fetchUserInfo = usersModel.__get__('fetchUserInfo');
@@ -89,7 +88,7 @@ describe('Users model unit tests', () => {
 
       await deleteUser(users, { email }, (err, res) => {
         expect(err).toBeNull();
-        expect(res.email).toBe(email);
+        expect(res.userInfo.email).toBe(email);
       });
     });
   });
@@ -138,22 +137,6 @@ describe('Users model unit tests', () => {
         expect(value.likedRecipes).toEqual(
           expect.arrayContaining([
             25549, 27055,
-          ]),
-        );
-      });
-    });
-  });
-
-  describe('unlikesRecipes unit tests', () => {
-    it('recipe is unliked successfully', async () => {
-      const email = 'user@email.com';
-      const recipes = [151266, 237491];
-
-      await unlikesRecipes(users, email, recipes, (err, { value }) => {
-        expect(err).toBeNull();
-        expect(value.likedRecipes).toEqual(
-          expect.not.arrayContaining([
-            151266, 237491,
           ]),
         );
       });

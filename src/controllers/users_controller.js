@@ -12,14 +12,13 @@ module.exports.clean = (callback) => {
 };
 
 const verifyToken = (token, res, callback) => {
-  usersModel.verifyToken(token, (tokenErr, decodedToken) => {
+  usersModel.verifyToken(token, (tokenErr, userInfo) => {
     if (tokenErr) {
       return res.status(401).json({
         error: 'Invalid or Missing Token, please include a valid token in the header',
       });
     }
-
-    return callback(null, decodedToken);
+    return callback(null, userInfo);
   });
 };
 
